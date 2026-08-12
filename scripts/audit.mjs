@@ -181,6 +181,20 @@ for (const file of pages) {
     En dashes (U+2013) are fine and are used for date ranges, where they are
     correct. Only U+2014 is banned.
   */
+  /*
+    No CSS uppercasing. The transform is lossy: it rendered "Frameworks & APIs"
+    as "FRAMEWORKS & APIS" and "cd" as "CD", and nothing in the output tells
+    you which casing was meant. Anything that wants capitals is typed that way.
+  */
+  const shouted = [
+    ...html.matchAll(/text-transform:\s*uppercase/gi),
+  ].length;
+  if (shouted) {
+    fail(`${shouted} text-transform: uppercase rule(s); type the capitals instead`);
+  } else {
+    pass("no CSS uppercasing");
+  }
+
   const emDashes = (text.match(/—/g) ?? []).length;
   if (emDashes) {
     const sample = text.match(/[^.\n]{0,50}—[^.\n]{0,50}/)?.[0]?.trim();

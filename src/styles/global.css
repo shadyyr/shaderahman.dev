@@ -230,12 +230,16 @@ a:active {
   color: var(--amber-dim);
 }
 
-/* Only the system name is shouted. The path beside it is a URL, and URLs are
-   lowercase. Uppercasing content that has real casing of its own (a company,
-   a place, a role title) is the one transform this site does not do. */
+/*
+  No text-transform anywhere on this site. Text renders exactly as authored.
+
+  CSS uppercasing is lossy: it turned "Frameworks & APIs" into "FRAMEWORKS &
+  APIS" and "cd" into "CD", and you cannot tell from the rendered page which
+  casing was intended. Anything that genuinely wants capitals is typed that
+  way in the source, like SHADE.OS below.
+*/
 .titlebar__name {
   color: var(--amber-hi);
-  text-transform: uppercase;
 }
 
 .titlebar__path {
@@ -290,11 +294,11 @@ a:active {
   }
 }
 
+/* Lowercase: these read as shell commands, and CD reads as an abbreviation. */
 .navgroup__label {
   font-family: var(--font-display);
   font-size: var(--text-micro);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--amber-dim);
   margin-bottom: var(--s2);
 }
@@ -450,8 +454,7 @@ a:active {
   background: var(--bg);
   font-family: var(--font-display);
   font-size: var(--text-micro);
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--amber-hi);
 }
 
@@ -476,8 +479,7 @@ h1 {
 
 h2 {
   font-size: var(--text-h2);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 h3 {
@@ -520,8 +522,7 @@ hr {
 .pagehead__eyebrow {
   font-family: var(--font-display);
   font-size: var(--text-micro);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  letter-spacing: 0.08em;
   color: var(--amber-dim);
   margin-bottom: var(--s2);
 }
