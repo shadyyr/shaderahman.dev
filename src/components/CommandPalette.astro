@@ -30,7 +30,6 @@ const commands: Command[] = [
         },
       ]
     : []),
-  { label: `Email ${SITE.email}`, href: `mailto:${SITE.email}`, group: "Contact" },
 ];
 ---
 
@@ -137,14 +136,18 @@ const commands: Command[] = [
     outline: 1px solid var(--blue-dim);
   }
 
+  /* Sized to fit the longest group name ("Elsewhere") with its tracking, and
+     never allowed to wrap. A fixed 6ch was letting the label collide with the
+     command beside it. */
   .palette__group {
     font-family: var(--font-display);
     font-size: var(--text-micro);
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--amber-dim);
-    width: 6ch;
     flex: none;
+    min-width: 11ch;
+    white-space: nowrap;
   }
 
   .palette__label {

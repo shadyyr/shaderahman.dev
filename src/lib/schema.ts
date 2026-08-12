@@ -24,7 +24,12 @@ export function personNode() {
     familyName: "Rahman",
     url: `${SITE.origin}/`,
     jobTitle: SITE.role,
-    email: `mailto:${SITE.email}`,
+    /*
+      No `email` field. It was harvestable straight out of the JSON-LD, and
+      once the contact button was removed there was no reason to leave a
+      scrapeable copy in the page source. `sameAs` below already does the
+      entity disambiguation work, which is the actual point of this block.
+    */
     description: SITE.description,
     address: {
       "@type": "PostalAddress",
