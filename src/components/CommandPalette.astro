@@ -6,19 +6,31 @@ const resume = findResume();
 
 type Command = { label: string; href: string; key?: string; group: string };
 
+/*
+  Groups read as shell commands: `cd` for routes on this site, `visit` for
+  anything that leaves it.
+
+  `visit` rather than `open` on purpose. Only one of them tells you the link
+  goes somewhere else, since you open a local file just as readily as a remote
+  one. `open` is also macOS-only, so pairing two real builtins was never
+  actually available: there is no portable shell command for "go to a URL".
+
+  Lowercase, because shell commands are lowercase and `CD` reads as an
+  abbreviation rather than a command.
+*/
 const commands: Command[] = [
   ...ROUTES.map((r) => ({
     label: r.title,
     href: r.path,
     key: r.key,
-    group: "Go",
+    group: "cd",
   })),
-  { label: "GitHub", href: SITE.socials.github, key: "g", group: "Elsewhere" },
+  { label: "GitHub", href: SITE.socials.github, key: "g", group: "visit" },
   {
     label: "LinkedIn",
     href: SITE.socials.linkedin,
     key: "l",
-    group: "Elsewhere",
+    group: "visit",
   },
   ...(resume.available
     ? [
@@ -26,7 +38,7 @@ const commands: Command[] = [
           label: "Résumé (PDF)",
           href: resume.href,
           key: "r",
-          group: "Elsewhere",
+          group: "visit",
         },
       ]
     : []),
@@ -136,17 +148,15 @@ const commands: Command[] = [
     outline: 1px solid var(--blue-dim);
   }
 
-  /* Sized to fit the longest group name ("Elsewhere") with its tracking, and
-     never allowed to wrap. A fixed 6ch was letting the label collide with the
-     command beside it. */
+  /* Sized to fit the longest group name ("visit") with its tracking, and never
+     allowed to wrap. Lowercase: these are shell commands, not abbreviations. */
   .palette__group {
     font-family: var(--font-display);
     font-size: var(--text-micro);
     letter-spacing: 0.08em;
-    text-transform: uppercase;
     color: var(--amber-dim);
     flex: none;
-    min-width: 11ch;
+    min-width: 7ch;
     white-space: nowrap;
   }
 
