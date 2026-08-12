@@ -1,0 +1,33 @@
+# Shade Rahman
+
+> Computer engineering student at the University of Central Florida, in Orlando,
+> FL. Solutions engineer intern at PeakActivity. This site is my work history,
+> the projects I have built, and what I work with. Static HTML, no tracking.
+
+Contact: shaderahman123@gmail.com
+
+## Pages
+
+- [Home](https://shaderahman.dev/): What I am working on now and selected projects.
+- [Experience](https://shaderahman.dev/experience): Every role in reverse order, plus education.
+- [Projects](https://shaderahman.dev/projects): What each project does, what broke, and where the source is.
+- [Skills](https://shaderahman.dev/skills): What I work with, each linked to the work where it was used.
+
+## Projects
+
+- [EcoStep](https://devpost.com/software/ecostep-to16qv): Reads appliance labels and utility bills to find home energy rebates worth claiming. Built at BloomKnights 2026 on Next.js, Supabase, and the Gemini API. Source at https://github.com/shadyyr/ecostep
+- [Bolo](https://bolo-chi.vercel.app): Turns native-language text, speech, or an email screenshot into a drafted English email without flattening the English already in it. Next.js, Tesseract.js, Gemini and OpenAI APIs. Source at https://github.com/shadyyr/bolo
+- [Cooked!](https://devpost.com/software/cooked-m9206r): Ranks recipes by how much of each one you can already make from what is in your fridge. Flask and Gemini backend, Next.js frontend. Built at HackUSF 2026. Source at https://github.com/shadyyr/cooked
+- [annabelle.sfx](https://github.com/shadyyr/sfx_soundboard): A sixteen-key soundboard PWA built as a birthday present. Vanilla HTML, CSS, and JavaScript, no build step, works offline.
+- [Network Connectivity Analyzer](https://github.com/shadyyr/cs2/tree/main/pa3): Tracks how connected a graph stays as edges are removed, in O(log n) average time, using Union-Find and reverse deletion. Java.
+- Gaming CPU Project: A team-built RISC-V CPU system-on-chip that runs video games on an FPGA, through IEEE at UCF. Verilog, 5-stage pipeline. Ran Sep to Dec 2025. No public repository.
+- Card Game Simulator: A card game simulator in C built on hand-rolled linked lists. Coursework. No public repository.
+
+## Elsewhere
+
+- [GitHub](https://github.com/shadyyr): Source for most of the projects listed here.
+- [LinkedIn](https://www.linkedin.com/in/shaderahman): Work history in the usual format.
+
+## Optional
+
+- [Résumé (PDF)](https://shaderahman.dev/resume/ShadeRahman_Resume.pdf): The same history on one page.

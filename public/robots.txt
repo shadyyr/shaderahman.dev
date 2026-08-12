@@ -1,0 +1,55 @@
+# https://shaderahman.dev/robots.txt
+#
+# Everything here is public and meant to be read, by people and by machines
+# alike. Nothing is disallowed. The AI crawlers are named explicitly because
+# several of them ship split bots, one for training, one for search, and
+# allowing only half of a pair is the usual way sites end up invisible by
+# accident.
+
+User-agent: *
+Allow: /
+
+# OpenAI
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# Anthropic
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+# Google, controls Gemini training and grounding. Does not affect Search rank.
+User-agent: Google-Extended
+Allow: /
+
+# Apple
+User-agent: Applebot-Extended
+Allow: /
+
+# Common Crawl, which feeds a long tail of downstream models
+User-agent: CCBot
+Allow: /
+
+# Meta
+User-agent: meta-externalagent
+Allow: /
+
+Sitemap: https://shaderahman.dev/sitemap-index.xml
