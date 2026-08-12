@@ -1,0 +1,44 @@
+---
+import { expand } from "../lib/glossary";
+
+interface Props {
+  name: string;
+  /** Marks the two or three that actually carried the work in this role. */
+  starred?: boolean;
+}
+
+const { name, starred = false } = Astro.props;
+const full = expand(name);
+---
+
+{
+  /*
+    Terms with an expansion render as <abbr>, which is the semantic element for
+    this and gives screen readers the full phrase for free. The dotted underline
+    is there so a reader knows there is something to hover, rather than having
+    to discover it by accident.
+  */
+}
+<li class={starred ? "tag tag--starred" : "tag"}>
+  {
+    full ? (
+      <abbr class="tag__abbr" title={full}>
+        {name}
+      </abbr>
+    ) : (
+      name
+    )
+  }
+</li>
+
+<style>
+  .tag__abbr {
+    text-decoration: underline dotted var(--amber-dim);
+    text-underline-offset: 0.25em;
+    cursor: help;
+  }
+
+  .tag--starred .tag__abbr {
+    text-decoration-color: var(--amber-hi);
+  }
+</style>

@@ -1,0 +1,18 @@
+---
+interface Props {
+  /** Small label above the heading. Decorative context, not a heading. */
+  eyebrow?: string;
+  /** The page's only <h1>. Exactly one per route, enforced by using this. */
+  heading: string;
+  lede?: string;
+}
+
+const { eyebrow, heading, lede } = Astro.props;
+---
+
+<div class="pagehead">
+  {eyebrow && <p class="pagehead__eyebrow">{eyebrow}</p>}
+  <h1>{heading}</h1>
+  {lede && <p class="pagehead__lede">{lede}</p>}
+  <slot />
+</div>

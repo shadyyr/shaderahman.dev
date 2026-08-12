@@ -1,0 +1,106 @@
+---
+import BaseHead from "../components/BaseHead.astro";
+import Sidebar from "../components/Sidebar.astro";
+import CommandPalette from "../components/CommandPalette.astro";
+import { SITE, ROUTES } from "../lib/site";
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description: string;
+  path: string;
+  isHome?: boolean;
+  crumbs?: { name: string; path: string }[];
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description,
+  path,
+  isHome = false,
+  crumbs,
+  noindex = false,
+} = Astro.props;
+
+const route = ROUTES.find((r) => r.path === path);
+const windowPath = route ? `${SITE.origin.replace(/^https?:\/\//, "")}${path}` : title;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <BaseHead
+      title={title}
+      description={description}
+      path={path}
+      isHome={isHome}
+      crumbs={crumbs}
+      noindex={noindex}
+    />
+  </head>
+  <body>
+    <a class="skiplink" href="#main">Skip to content</a>
+
+    <div class="app">
+      <header class="titlebar">
+        <span class="titlebar__name">{SITE.system.label}</span>
+        <span class="titlebar__path">{windowPath}</span>
+        <span class="titlebar__glyphs" aria-hidden="true">[-][□][×]</span>
+      </header>
+
+      <div class="frame">
+        <Sidebar path={path} />
+
+        <main class="content" id="main">
+          <slot />
+        </main>
+      </div>
+
+      <footer class="statusbar">
+        <div class="statusbar__hints">
+          <span class="hint"><kbd>/</kbd> commands</span>
+          <span class="hint"><kbd>H E P S</kbd> jump</span>
+          <span class="hint"><kbd>G</kbd> GitHub</span>
+          <span class="hint"><kbd>L</kbd> LinkedIn</span>
+          <span class="hint"><kbd>R</kbd> résumé</span>
+        </div>
+        <time class="statusbar__clock" id="clock" aria-hidden="true"></time>
+      </footer>
+    </div>
+
+    <div class="crt-overlay" aria-hidden="true"></div>
+
+    <CommandPalette />
+
+    <style>
+      /* Keyboard hints are a promise. They stay hidden until the script that
+         keeps that promise has actually run. */
+      .hint {
+        display: none;
+      }
+
+      :global(html[data-js]) .hint {
+        display: inline;
+      }
+    </style>
+
+    <script>
+      // Marks that JS is alive, which is what un-hides the keyboard hints.
+      document.documentElement.setAttribute("data-js", "");
+
+      const clock = document.getElementById("clock");
+      if (clock) {
+        const tick = () => {
+          const now = new Date();
+          clock.textContent = now.toLocaleTimeString("en-US", {
+            hour12: false,
+          });
+          clock.setAttribute("datetime", now.toISOString());
+        };
+        tick();
+        setInterval(tick, 1000);
+      }
+    </script>
+  </body>
+</html>
