@@ -1,0 +1,23 @@
+{
+  "name": "shaderahman.dev",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "assets": "node scripts/generate-assets.mjs",
+    "audit": "node scripts/audit.mjs",
+    "links": "node scripts/check-links.mjs"
+  },
+  "dependencies": {
+    "astro": "^7.2.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@astrojs/sitemap": "^3.7.3",
+    "typescript": "^6.0.3"
+  }
+}
