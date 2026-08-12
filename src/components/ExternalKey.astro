@@ -1,0 +1,37 @@
+---
+interface Props {
+  href: string;
+  label: string;
+  /** Keyboard hint shown in the chrome, e.g. "G". */
+  hint?: string;
+  /** "nav" renders as a sidebar row, "key" as a terminal-style button. */
+  variant?: "nav" | "key";
+}
+
+const { href, label, hint, variant = "key" } = Astro.props;
+
+// Anything leaving the site opens in a new tab; PDFs too, so a back button
+// never bounces someone out of the site. Screen readers are told so out loud
+// instead of being surprised by it.
+const isExternal = href.startsWith("http");
+const isPdf = href.endsWith(".pdf");
+const newTab = isExternal || isPdf;
+---
+
+<a
+  class={variant === "nav" ? "navlink" : "key"}
+  href={href}
+  target={newTab ? "_blank" : undefined}
+  rel={isExternal ? "noopener noreferrer me" : newTab ? "noopener" : undefined}
+>
+  {variant === "nav" && <span class="navlink__caret" aria-hidden="true">&gt;</span>}
+  <span>{label}</span>
+  {newTab && <span class="visually-hidden">(opens in a new tab)</span>}
+  {
+    hint && (
+      <span class={variant === "nav" ? "navlink__key" : "key__hint"} aria-hidden="true">
+        {hint}
+      </span>
+    )
+  }
+</a>

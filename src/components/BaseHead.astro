@@ -1,0 +1,98 @@
+---
+import { SITE, abs } from "../lib/site";
+import { buildGraph } from "../lib/schema";
+
+interface Props {
+  /** Page-specific. Never repeated across routes. */
+  title: string;
+  description: string;
+  /** Route path, e.g. "/experience". Drives canonical, OG url, and JSON-LD. */
+  path: string;
+  isHome?: boolean;
+  crumbs?: { name: string; path: string }[];
+  /** For the error page: real, but not something to put in an index. */
+  noindex?: boolean;
+}
+
+const {
+  title,
+  description,
+  path,
+  isHome = false,
+  crumbs,
+  noindex = false,
+} = Astro.props;
+
+// Home reads "Shade Rahman · Computer Engineering Student"; every other route
+// reads "Experience · Shade Rahman". Distinct in the tab, in history, and in
+// search. No em dashes anywhere on this site, including in the title.
+const fullTitle = isHome
+  ? `${SITE.name} · ${SITE.role}`
+  : `${title} · ${SITE.name}`;
+
+const canonical = abs(path);
+const ogImage = abs("/og.png");
+
+const graph = buildGraph({ path, title: fullTitle, description, isHome, crumbs });
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+<meta name="author" content={SITE.name} />
+{noindex && <meta name="robots" content="noindex, follow" />}
+
+<!-- Open Graph. Absolute URLs only; relative paths silently fail to unfurl. -->
+<meta property="og:type" content={isHome ? "profile" : "website"} />
+<meta property="og:url" content={canonical} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta
+  property="og:image:alt"
+  content={`An amber terminal window titled ${SITE.name}, ${SITE.role}.`}
+/>
+<meta property="og:site_name" content={SITE.name} />
+<meta property="og:locale" content="en_US" />
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={ogImage} />
+
+<!-- Favicons: the 2026 short list. SVG for everything modern, ICO for the
+     crawlers that request it blind, one PNG for iOS. -->
+<link rel="icon" href="/favicon.ico" sizes="32x32" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<meta name="theme-color" content="#0b0906" />
+
+<link rel="sitemap" href="/sitemap-index.xml" />
+<link rel="me" href={SITE.socials.github} />
+
+<!-- The two faces needed for first paint. The 600 weight loads on demand. -->
+<link
+  rel="preload"
+  href="/fonts/DepartureMono-Regular.woff2"
+  as="font"
+  type="font/woff2"
+  crossorigin
+/>
+<link
+  rel="preload"
+  href="/fonts/ibm-plex-mono-latin-400-normal.woff2"
+  as="font"
+  type="font/woff2"
+  crossorigin
+/>
+
+<script
+  type="application/ld+json"
+  set:html={JSON.stringify(graph)}
+  is:inline
+/>

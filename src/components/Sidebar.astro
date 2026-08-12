@@ -1,0 +1,94 @@
+---
+import { SITE, ROUTES } from "../lib/site";
+import { findResume } from "../lib/resume";
+import ExternalKey from "./ExternalKey.astro";
+
+const current = Astro.props.path as string;
+const resume = findResume();
+---
+
+<nav class="sidebar" aria-label="Primary">
+  <div class="navgroup">
+    <p class="navgroup__label" id="nav-sections">Sections</p>
+    <ul class="navlist" aria-labelledby="nav-sections">
+      {
+        ROUTES.map((route) => (
+          <li>
+            <a
+              class="navlink"
+              href={route.path}
+              aria-current={current === route.path ? "page" : undefined}
+            >
+              <span class="navlink__caret" aria-hidden="true">
+                &gt;
+              </span>
+              <span>{route.label}</span>
+              <span class="navlink__key" aria-hidden="true">
+                {route.key.toUpperCase()}
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+
+  <div class="navgroup">
+    <p class="navgroup__label" id="nav-elsewhere">Elsewhere</p>
+    <ul class="navlist" aria-labelledby="nav-elsewhere">
+      <li>
+        <ExternalKey
+          href={SITE.socials.github}
+          label="GitHub"
+          hint="G"
+          variant="nav"
+        />
+      </li>
+      <li>
+        <ExternalKey
+          href={SITE.socials.linkedin}
+          label="LinkedIn"
+          hint="L"
+          variant="nav"
+        />
+      </li>
+      <li>
+        {
+          resume.available ? (
+            <ExternalKey
+              href={resume.href}
+              label="Résumé (PDF)"
+              hint="R"
+              variant="nav"
+            />
+          ) : (
+            <span class="navlink navlink--off" title={`Add public/resume/${resume.expected} to turn this on`}>
+              <span class="navlink__caret" aria-hidden="true">
+                &gt;
+              </span>
+              <span>Résumé (not uploaded)</span>
+            </span>
+          )
+        }
+      </li>
+    </ul>
+  </div>
+
+  <p class="sidebar__foot">
+    {SITE.system.label} v{SITE.system.version}<br />
+    {SITE.location}
+  </p>
+</nav>
+
+<style>
+  /* The one state the sidebar owns: a link that has nothing to point at.
+     It stays visible and explains itself rather than vanishing. */
+  .navlink--off {
+    color: var(--amber-dim);
+    cursor: help;
+  }
+
+  .navlink--off:hover {
+    background: none;
+  }
+</style>

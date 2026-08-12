@@ -1,0 +1,264 @@
+---
+import { SITE, ROUTES } from "../lib/site";
+import { findResume } from "../lib/resume";
+
+const resume = findResume();
+
+type Command = { label: string; href: string; key?: string; group: string };
+
+const commands: Command[] = [
+  ...ROUTES.map((r) => ({
+    label: r.title,
+    href: r.path,
+    key: r.key,
+    group: "Go",
+  })),
+  { label: "GitHub", href: SITE.socials.github, key: "g", group: "Elsewhere" },
+  {
+    label: "LinkedIn",
+    href: SITE.socials.linkedin,
+    key: "l",
+    group: "Elsewhere",
+  },
+  ...(resume.available
+    ? [
+        {
+          label: "Résumé (PDF)",
+          href: resume.href,
+          key: "r",
+          group: "Elsewhere",
+        },
+      ]
+    : []),
+  { label: `Email ${SITE.email}`, href: `mailto:${SITE.email}`, group: "Contact" },
+];
+---
+
+<dialog class="palette" id="palette" aria-label="Commands">
+  <div class="palette__form">
+    <label class="visually-hidden" for="palette-input">Filter commands</label>
+    <input
+      class="palette__input"
+      id="palette-input"
+      type="text"
+      placeholder="Type to filter…"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <ul class="palette__list" id="palette-list">
+      {
+        commands.map((command) => {
+          const newTab =
+            command.href.startsWith("http") || command.href.endsWith(".pdf");
+          return (
+            <li>
+              <a
+                class="palette__item"
+                href={command.href}
+                target={newTab ? "_blank" : undefined}
+                rel={newTab ? "noopener noreferrer" : undefined}
+                data-label={command.label.toLowerCase()}
+              >
+                <span class="palette__group">{command.group}</span>
+                <span class="palette__label">{command.label}</span>
+                {command.key && (
+                  <span class="palette__key" aria-hidden="true">
+                    {command.key.toUpperCase()}
+                  </span>
+                )}
+              </a>
+            </li>
+          );
+        })
+      }
+    </ul>
+    <p class="palette__empty" id="palette-empty" hidden>No match.</p>
+  </div>
+</dialog>
+
+<style>
+  .palette {
+    width: min(34rem, calc(100vw - 2rem));
+    padding: 0;
+    border: 1px solid var(--amber-faint);
+    background: var(--bg-panel);
+    color: var(--amber);
+    margin: auto;
+  }
+
+  .palette::backdrop {
+    background: rgba(6, 4, 2, 0.72);
+  }
+
+  .palette__form {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .palette__input {
+    font: inherit;
+    color: var(--amber-max);
+    background: var(--bg-inset);
+    border: 0;
+    border-bottom: 1px solid var(--amber-faint);
+    padding: var(--s3) var(--s4);
+  }
+
+  .palette__input::placeholder {
+    color: var(--amber-dim);
+  }
+
+  .palette__input:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: -2px;
+  }
+
+  .palette__list {
+    list-style: none;
+    margin: 0;
+    padding: var(--s2);
+    max-height: 18rem;
+    overflow-y: auto;
+  }
+
+  .palette__item {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s3);
+    padding: var(--s2) var(--s3);
+    text-decoration: none;
+    color: var(--blue);
+    font-size: var(--text-sm);
+  }
+
+  .palette__item[data-active] {
+    background: var(--blue-ghost);
+    color: var(--blue-hi);
+    outline: 1px solid var(--blue-dim);
+  }
+
+  .palette__group {
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amber-dim);
+    width: 6ch;
+    flex: none;
+  }
+
+  .palette__label {
+    flex: 1;
+  }
+
+  .palette__key {
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    color: var(--amber-dim);
+  }
+
+  .palette__empty {
+    padding: var(--s4);
+    color: var(--amber-dim);
+    font-size: var(--text-sm);
+  }
+</style>
+
+<script>
+  const palette = document.getElementById("palette") as HTMLDialogElement | null;
+  const input = document.getElementById("palette-input") as HTMLInputElement | null;
+  const empty = document.getElementById("palette-empty");
+
+  if (palette && input) {
+    const items = Array.from(
+      palette.querySelectorAll<HTMLAnchorElement>(".palette__item"),
+    );
+
+    // Single-letter shortcuts, read off the palette so the two can never
+    // disagree about what "G" does.
+    const shortcuts = new Map<string, string>();
+    for (const item of items) {
+      const key = item.querySelector(".palette__key")?.textContent?.trim();
+      if (key) shortcuts.set(key.toLowerCase(), item.href);
+    }
+
+    let active = 0;
+
+    const visible = () => items.filter((item) => !item.hidden);
+
+    const paint = () => {
+      const shown = visible();
+      active = Math.max(0, Math.min(active, shown.length - 1));
+      for (const item of items) item.removeAttribute("data-active");
+      shown[active]?.setAttribute("data-active", "");
+      shown[active]?.scrollIntoView({ block: "nearest" });
+      if (empty) empty.hidden = shown.length > 0;
+    };
+
+    const filter = () => {
+      const query = input.value.trim().toLowerCase();
+      for (const item of items) {
+        item.hidden = query !== "" && !(item.dataset.label ?? "").includes(query);
+      }
+      active = 0;
+      paint();
+    };
+
+    const open = () => {
+      if (palette.open) return;
+      input.value = "";
+      filter();
+      palette.showModal();
+      input.focus();
+    };
+
+    input.addEventListener("input", filter);
+
+    palette.addEventListener("keydown", (event) => {
+      const shown = visible();
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        active = (active + 1) % Math.max(shown.length, 1);
+        paint();
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        active = (active - 1 + shown.length) % Math.max(shown.length, 1);
+        paint();
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        shown[active]?.click();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      // Never hijack a key someone is using to type, and never fight a
+      // browser shortcut. Cmd+K is the one deliberate exception.
+      const target = event.target as HTMLElement | null;
+      const typing =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target?.isContentEditable === true;
+
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        open();
+        return;
+      }
+
+      if (typing || event.metaKey || event.ctrlKey || event.altKey) return;
+
+      if (event.key === "/") {
+        event.preventDefault();
+        open();
+        return;
+      }
+
+      const destination = shortcuts.get(event.key.toLowerCase());
+      if (destination) {
+        const item = items.find((i) => i.href === destination);
+        if (item?.target === "_blank") window.open(destination, "_blank", "noopener");
+        else window.location.href = destination;
+      }
+    });
+  }
+</script>
