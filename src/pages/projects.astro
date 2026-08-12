@@ -1,0 +1,46 @@
+---
+import { getCollection } from "astro:content";
+import OsLayout from "../layouts/OsLayout.astro";
+import PageHead from "../components/PageHead.astro";
+import ProjectEntry from "../components/ProjectEntry.astro";
+
+// Featured first, then awarded, then newest.
+//
+// Strict chronology reads as neutral but is not: it hands the top of the page
+// to whatever happened to be built most recently, which is how a weekend
+// project ends up above the thing you actually want people to read. `featured`
+// is the one knob that decides what leads, and it drives the home page too.
+const entries = (await getCollection("projects"))
+  .filter((entry) => !entry.data.draft)
+  .sort((a, b) => {
+    const byFeatured =
+      Number(Boolean(b.data.featured)) - Number(Boolean(a.data.featured));
+    if (byFeatured !== 0) return byFeatured;
+
+    const byAward =
+      Number(Boolean(b.data.award)) - Number(Boolean(a.data.award));
+    if (byAward !== 0) return byAward;
+
+    return b.data.date.localeCompare(a.data.date);
+  });
+---
+
+<OsLayout
+  title="Projects"
+  description="Things I've built, what each one was for, what broke along the way, and where to read the source."
+  path="/projects"
+  crumbs={[
+    { name: "Home", path: "/" },
+    { name: "Projects", path: "/projects" },
+  ]}
+>
+  <PageHead
+    eyebrow="Built things"
+    heading="Projects"
+    lede="Fewer entries, written properly. Each one says what it does, what was hard, and what I would do differently."
+  />
+
+  <ul class="entries">
+    {entries.map((entry) => <ProjectEntry entry={entry} level={2} />)}
+  </ul>
+</OsLayout>

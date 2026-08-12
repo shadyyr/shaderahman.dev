@@ -1,0 +1,224 @@
+---
+import { getCollection } from "astro:content";
+import OsLayout from "../layouts/OsLayout.astro";
+import PageHead from "../components/PageHead.astro";
+import ProjectEntry from "../components/ProjectEntry.astro";
+import ExternalKey from "../components/ExternalKey.astro";
+import { SITE } from "../lib/site";
+import { findResume } from "../lib/resume";
+import { formatRange, byRecency } from "../lib/format";
+
+const experience = (await getCollection("experience"))
+  .filter((entry) => !entry.data.draft)
+  .sort((a, b) => byRecency(a.data, b.data));
+
+// Several roles run concurrently, so "Now" is a list rather than one entry.
+const current = experience.filter((entry) => !entry.data.end);
+
+const featured = (await getCollection("projects"))
+  .filter((entry) => !entry.data.draft && entry.data.featured)
+  .sort((a, b) => b.data.date.localeCompare(a.data.date));
+
+const resume = findResume();
+
+const buildDate = new Date().toISOString().slice(0, 10);
+---
+
+<OsLayout
+  title="Home"
+  description={SITE.description}
+  path="/"
+  isHome
+>
+  <PageHead eyebrow={`${SITE.system.label} · ready`} heading={SITE.name}>
+    <p class="tagline">{SITE.role} · {SITE.location}</p>
+  </PageHead>
+
+  <div class="stack--loose stack">
+    <section aria-labelledby="intro-heading" class="intro">
+      <h2 class="visually-hidden" id="intro-heading">Introduction</h2>
+      <p>
+        I'm a computer engineering student at UCF. Right now I'm a solutions
+        engineer intern at PeakActivity, president of the Bengali Student
+        Association, and designing this year's Knight Hacks landing page. Most
+        of what I build sits between full-stack web work and whichever API I've
+        gotten curious about that month.
+      </p>
+      <p>
+        I started out as a CS major and switched after my first semester. I
+        still love CS and I still love writing code, but one semester in I
+        wanted to know what was underneath it. What the code is actually doing,
+        and how it's doing it. Computer engineering is where that question gets
+        answered. It's still a struggle, and it's still worth it.
+      </p>
+
+      <div class="keys">
+        <ExternalKey href={SITE.socials.github} label="GitHub" hint="G" />
+        <ExternalKey href={SITE.socials.linkedin} label="LinkedIn" hint="L" />
+        {
+          resume.available ? (
+            <ExternalKey href={resume.href} label="Résumé (PDF)" hint="R" />
+          ) : (
+            <span
+              class="key key--off"
+              title={`Drop the PDF at public/resume/${resume.expected}`}
+            >
+              Résumé (not uploaded yet)
+            </span>
+          )
+        }
+      </div>
+    </section>
+
+    {
+      current.length > 0 && (
+        <section class="panel" aria-labelledby="now-heading">
+          <h2 class="panel__title" id="now-heading">
+            Now
+          </h2>
+          <ul class="now">
+            {current.map((entry) => (
+              <li class="now__item">
+                <p class="now__role">
+                  {entry.data.role} at{" "}
+                  {entry.data.companyUrl ? (
+                    <a
+                      href={entry.data.companyUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {entry.data.company}
+                    </a>
+                  ) : (
+                    entry.data.company
+                  )}
+                </p>
+                <p class="now__meta">
+                  since {formatRange(entry.data.start, entry.data.end).split(" – ")[0]} ·{" "}
+                  {entry.data.location}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <p class="now__more">
+            <a href="/experience">Full work history →</a>
+          </p>
+        </section>
+      )
+    }
+
+    {
+      featured.length > 0 && (
+        <section aria-labelledby="featured-heading">
+          <h2 id="featured-heading">Selected work</h2>
+          <ul class="entries">
+            {featured.map((entry) => (
+              <ProjectEntry entry={entry} compact level={3} />
+            ))}
+          </ul>
+          <p class="more">
+            <a href="/projects">Everything else →</a>
+          </p>
+        </section>
+      )
+    }
+
+    <section class="panel panel--plain colophon" aria-labelledby="colophon-heading">
+      <h2 class="panel__title" id="colophon-heading">Colophon</h2>
+      <p>
+        Static HTML built with <a href="https://astro.build">Astro</a> and
+        hand-written CSS. No framework runtime, no analytics, no cookies,
+        no trackers. The only JavaScript on the page is the command palette,
+        the keyboard shortcuts, and the clock in the status bar. Everything
+        here works with all three switched off.
+      </p>
+      <p>
+        Display type is <a href="https://departuremono.com">Departure Mono</a> by
+        Helena Zhang; body type is IBM Plex Mono. Both are licensed under the
+        SIL Open Font License and served from this domain.
+      </p>
+      <p class="colophon__meta">
+        Last built {buildDate} ·{" "}
+        <a href={`${SITE.socials.github}/shaderahman.dev`}>Source</a>
+      </p>
+    </section>
+  </div>
+</OsLayout>
+
+<style>
+  /* "Computer Engineering Student · Orlando, FL". A role title and a city,
+     both of which have their own capitalisation. Left alone. */
+  .tagline {
+    margin-top: var(--s3);
+    font-family: var(--font-display);
+    font-size: var(--text-sm);
+    letter-spacing: 0.08em;
+    color: var(--amber-dim);
+  }
+
+  .intro {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s4);
+  }
+
+  .intro p {
+    font-size: var(--text-lg);
+    color: var(--amber);
+  }
+
+  .keys {
+    margin-top: var(--s2);
+  }
+
+  .now {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s4);
+  }
+
+  .now__item {
+    padding-left: var(--s4);
+    border-left: 1px solid var(--amber-ghost);
+  }
+
+  .now__role {
+    font-size: var(--text-lg);
+    color: var(--amber-max);
+  }
+
+  .now__meta {
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.08em;
+    color: var(--amber-dim);
+    margin-top: var(--s1);
+  }
+
+  .now__summary {
+    margin-top: var(--s3);
+  }
+
+  .now__more,
+  .more {
+    margin-top: var(--s4);
+    font-size: var(--text-sm);
+  }
+
+  .colophon p {
+    color: var(--amber-dim);
+    font-size: var(--text-sm);
+  }
+
+  .colophon p + p {
+    margin-top: var(--s3);
+  }
+
+  .colophon__meta {
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.08em;
+  }
+</style>

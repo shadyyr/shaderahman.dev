@@ -1,0 +1,152 @@
+---
+import { render, type CollectionEntry } from "astro:content";
+import { formatAward } from "../lib/format";
+import Tag from "./Tag.astro";
+
+interface Props {
+  entry: CollectionEntry<"projects">;
+  /** Compact form for the home page: summary and links only. */
+  compact?: boolean;
+  /** Depth in the page outline. Never skip a level to get a size you like. */
+  level?: 2 | 3;
+}
+
+const { entry, compact = false, level = 2 } = Astro.props;
+const { data } = entry;
+const Heading = `h${level}` as "h2" | "h3";
+
+const { Content } = await render(entry);
+const hasBody = !compact && entry.body != null && entry.body.trim().length > 0;
+---
+
+<li class="entry">
+  <div class="entry__head">
+    <Heading class="entry__title">{data.title}</Heading>
+    <p class="entry__meta">{data.period}</p>
+  </div>
+
+  {data.award && <p class="award">{formatAward(data.award)}</p>}
+
+  <p class="entry__summary">{data.summary}</p>
+
+  {
+    !compact && data.highlights.length > 0 && (
+      <dl class="highlights">
+        {data.highlights.map((highlight) => (
+          <div class="highlight">
+            <dt>{highlight.label}</dt>
+            <dd>{highlight.detail}</dd>
+          </div>
+        ))}
+      </dl>
+    )
+  }
+
+  {
+    data.tech.length > 0 && (
+      <ul class="tags">
+        {data.tech.map((item) => (
+          <Tag name={item} />
+        ))}
+      </ul>
+    )
+  }
+
+  {
+    hasBody && (
+      <div class="entry__detail prose">
+        <Content />
+      </div>
+    )
+  }
+
+  {
+    !compact && data.collaborators.length > 0 && (
+      <p class="collab">
+        <span class="collab__label">Built with</span>{" "}
+        {data.collaborators.map((person, index) => (
+          <>
+            {index > 0 && ", "}
+            {person.url ? (
+              <a href={person.url} target="_blank" rel="noopener noreferrer">
+                {person.name}
+              </a>
+            ) : (
+              <span>{person.name}</span>
+            )}
+          </>
+        ))}
+      </p>
+    )
+  }
+
+  {
+    data.links.length > 0 && (
+      <p class="entry__links">
+        {data.links.map((link) => (
+          <a href={link.url} target="_blank" rel="noopener noreferrer">
+            {link.label}
+          </a>
+        ))}
+      </p>
+    )
+  }
+</li>
+
+<style>
+  .award {
+    margin-top: var(--s2);
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amber-max);
+  }
+
+  .award::before {
+    content: "★ ";
+  }
+
+  .highlights {
+    margin: var(--s4) 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+  }
+
+  .highlight dt {
+    font-weight: 600;
+    color: var(--amber-max);
+  }
+
+  .highlight dd {
+    margin: 0;
+    padding-left: var(--s4);
+    border-left: 1px solid var(--amber-ghost);
+    color: var(--amber);
+    max-width: var(--measure);
+  }
+
+  .collab {
+    margin-top: var(--s4);
+    font-size: var(--text-sm);
+    color: var(--amber-dim);
+  }
+
+  .collab__label {
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amber-dim);
+  }
+
+  .prose :global(p) {
+    color: var(--amber-dim);
+    max-width: var(--measure);
+  }
+
+  .prose :global(p + p) {
+    margin-top: var(--s3);
+  }
+</style>
