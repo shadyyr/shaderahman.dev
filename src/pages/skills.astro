@@ -1,0 +1,244 @@
+---
+import { getCollection } from "astro:content";
+import OsLayout from "../layouts/OsLayout.astro";
+import PageHead from "../components/PageHead.astro";
+import { CERTIFICATIONS, AWARDS } from "../lib/site";
+import { expand } from "../lib/glossary";
+
+const categories = (await getCollection("skills")).sort(
+  (a, b) => a.data.order - b.data.order,
+);
+
+const experience = (await getCollection("experience")).filter(
+  (entry) => !entry.data.draft,
+);
+const projects = (await getCollection("projects")).filter(
+  (entry) => !entry.data.draft,
+);
+
+/**
+ * A skills page that only lists words is a page of claims. This walks the
+ * experience and project entries and, for each skill, collects the places it
+ * was actually used, so every claim on this page has something standing
+ * behind it. Matching is on name, case-insensitive.
+ */
+const usage = new Map<string, { label: string; href: string }[]>();
+
+const record = (name: string, label: string, href: string) => {
+  const key = name.trim().toLowerCase();
+  const list = usage.get(key) ?? [];
+  if (!list.some((item) => item.label === label)) list.push({ label, href });
+  usage.set(key, list);
+};
+
+for (const entry of experience) {
+  for (const tag of entry.data.tags) {
+    record(tag.name, entry.data.company, "/experience");
+  }
+}
+
+for (const entry of projects) {
+  for (const tech of entry.data.tech) {
+    record(tech, entry.data.title, "/projects");
+  }
+}
+
+const evidenceFor = (name: string) => usage.get(name.trim().toLowerCase()) ?? [];
+---
+
+<OsLayout
+  title="Skills"
+  description="What I work with, grouped, with a link to where each one was actually used rather than a self-assigned rating."
+  path="/skills"
+  crumbs={[
+    { name: "Home", path: "/" },
+    { name: "Skills", path: "/skills" },
+  ]}
+>
+  <PageHead
+    eyebrow="Tools of the trade"
+    heading="Skills"
+    lede="No percentage bars. There is no honest way to render one, so each entry points at the work where it was actually used."
+  />
+
+  <div class="categories">
+    {
+      categories.map((category) => (
+        <section class="panel category" aria-labelledby={`cat-${category.id}`}>
+          <h2 class="panel__title" id={`cat-${category.id}`}>
+            {category.data.category}
+          </h2>
+          <ul class="skills">
+            {category.data.items.map((item) => {
+              const evidence = evidenceFor(item.name);
+              return (
+                <li class="skill">
+                  <span class="skill__name">
+                    {expand(item.name) ? (
+                      <abbr class="skill__abbr" title={expand(item.name)}>
+                        {item.name}
+                      </abbr>
+                    ) : (
+                      item.name
+                    )}
+                  </span>
+                  {item.note && <span class="skill__note">{item.note}</span>}
+                  {evidence.length > 0 && (
+                    <span class="skill__evidence">
+                      <span class="skill__evidence-label">used at</span>{" "}
+                      {evidence.map((place, index) => (
+                        <>
+                          {index > 0 && ", "}
+                          <a href={place.href}>{place.label}</a>
+                        </>
+                      ))}
+                    </span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ))
+    }
+  </div>
+
+  <div class="credentials">
+    <section class="panel" aria-labelledby="certs-heading">
+      <h2 class="panel__title" id="certs-heading">Certifications</h2>
+      <ul class="credlist">
+        {
+          CERTIFICATIONS.map((item) => (
+            <li>
+              <span class="cred__name">{item.name}</span>
+              <span class="cred__meta">
+                {item.issuer} · {item.date}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+
+    <section class="panel" aria-labelledby="awards-heading">
+      <h2 class="panel__title" id="awards-heading">Awards</h2>
+      <ul class="credlist">
+        {
+          AWARDS.map((item) => (
+            <li>
+              <span class="cred__name">{item.name}</span>
+              <span class="cred__meta">
+                {item.issuer}
+                {"date" in item && item.date ? ` · ${item.date}` : ""}
+              </span>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+  </div>
+</OsLayout>
+
+<style>
+  .categories {
+    display: grid;
+    gap: var(--s8);
+    /* Two columns at desktop width rather than three. Three leaves the fourth
+       category stranded alone on its own row. */
+    grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+    align-items: start;
+  }
+
+  .skills {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+  }
+
+  .skill {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s1);
+    padding-bottom: var(--s3);
+    border-bottom: 1px solid var(--amber-ghost);
+  }
+
+  .skill:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .skill__name {
+    color: var(--amber-max);
+    font-weight: 600;
+  }
+
+  .skill__abbr {
+    text-decoration: underline dotted var(--amber-dim);
+    text-underline-offset: 0.25em;
+    cursor: help;
+  }
+
+  .skill__note {
+    color: var(--amber-dim);
+    font-size: var(--text-sm);
+  }
+
+  .skill__evidence {
+    font-size: var(--text-sm);
+    color: var(--amber-dim);
+  }
+
+  .skill__evidence-label {
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amber-dim);
+  }
+
+  .credentials {
+    margin-top: var(--s10);
+    display: grid;
+    gap: var(--s8);
+    grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+    align-items: start;
+  }
+
+  .credlist {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s3);
+  }
+
+  .credlist li {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s1);
+    padding-bottom: var(--s3);
+    border-bottom: 1px solid var(--amber-ghost);
+  }
+
+  .credlist li:last-child {
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .cred__name {
+    color: var(--amber-max);
+    font-weight: 600;
+  }
+
+  /* Issuers are companies: Udacity, Certiport, Microsoft. Real names, real
+     casing. */
+  .cred__meta {
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.08em;
+    color: var(--amber-dim);
+  }
+</style>

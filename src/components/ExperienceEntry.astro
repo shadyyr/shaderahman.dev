@@ -1,0 +1,96 @@
+---
+import { render, type CollectionEntry } from "astro:content";
+import { formatRange, emphasize } from "../lib/format";
+import Tag from "./Tag.astro";
+
+interface Props {
+  entry: CollectionEntry<"experience">;
+  /** Depth in the page outline. Never skip a level to get a size you like. */
+  level?: 2 | 3;
+}
+
+const { entry, level = 2 } = Astro.props;
+const { data } = entry;
+const Heading = `h${level}` as "h2" | "h3";
+
+// The markdown body is optional detail. Rendering it server-side means a
+// crawler and a reader with JS off see the same page as everyone else.
+const { Content } = await render(entry);
+const hasBody = entry.body != null && entry.body.trim().length > 0;
+---
+
+<li class="entry">
+  <div class="entry__head">
+    <Heading class="entry__title">
+      {data.role}
+      <span class="entry__sep" aria-hidden="true"> · </span>
+      <span class="entry__org">
+        {
+          data.companyUrl ? (
+            <a href={data.companyUrl} target="_blank" rel="noopener noreferrer">
+              {data.company}
+            </a>
+          ) : (
+            data.company
+          )
+        }
+      </span>
+    </Heading>
+    <p class="entry__meta">
+      <span>{formatRange(data.start, data.end)}</span>
+      <span aria-hidden="true"> · </span>
+      <span>{data.location}</span>
+    </p>
+  </div>
+
+  <p class="entry__summary">{data.summary}</p>
+
+  <ul class="entry__bullets">
+    {data.bullets.map((bullet) => <li set:html={emphasize(bullet)} />)}
+  </ul>
+
+  {
+    data.tags.length > 0 && (
+      <ul class="tags">
+        {data.tags.map((tag) => (
+          <Tag name={tag.name} starred={tag.starred} />
+        ))}
+      </ul>
+    )
+  }
+
+  {
+    hasBody && (
+      <div class="entry__detail prose">
+        <Content />
+      </div>
+    )
+  }
+
+  {
+    data.links.length > 0 && (
+      <p class="entry__links">
+        {data.links.map((link) => (
+          <a href={link.url} target="_blank" rel="noopener noreferrer">
+            {link.label}
+          </a>
+        ))}
+      </p>
+    )
+  }
+</li>
+
+<style>
+  .entry__sep {
+    color: var(--amber-faint);
+  }
+
+  .prose :global(p) {
+    color: var(--amber-dim);
+    max-width: var(--measure);
+  }
+
+  .prose :global(p + p) {
+    margin-top: var(--s3);
+  }
+</style>
