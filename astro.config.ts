@@ -17,9 +17,17 @@ export default defineConfig({
   build: {
     // One <style> in the head beats a blocking request for ~12KB of CSS.
     inlineStylesheets: "always",
-    // Emit /experience.html rather than /experience/index.html so the
-    // sitemap URLs and the served paths agree with trailingSlash: "never".
-    format: "file",
+    /*
+      Directory format, so /experience is emitted as experience/index.html.
+
+      The alternative, format: "file", emits experience.html and then depends
+      on the host rewriting a bare /experience onto it. Vercel does not do that
+      by default, so every route except the home page returned the 404 page on
+      the first deploy. A directory index is the one thing every static host
+      resolves without configuration, which makes this the portable choice
+      rather than the clever one.
+    */
+    format: "directory",
   },
 
   vite: {
