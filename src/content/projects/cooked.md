@@ -1,0 +1,43 @@
+---
+title: "Cooked!"
+period: "HackUSF 2026"
+date: "2026-03"
+featured: true
+summary: >-
+  Recipe sites want you to already have the ingredients. Cooked! goes the other
+  way: type in what is actually in your fridge and it ranks recipes by how much
+  of each one you can make right now.
+# The full project stack. The body says which parts were mine, because listing
+# a team's whole stack without saying what you touched reads as taking credit
+# for the rest of it.
+tech:
+  [
+    "Python",
+    "Flask",
+    "Next.js",
+    "TypeScript",
+    "REST APIs",
+    "TheMealDB API",
+    "Gemini API",
+  ]
+highlights:
+  - label: "Ranking, not just matching"
+    detail: "A tiered ingredient-matching algorithm with coverage-based scoring ranks 12+ recipes per query, rather than dumping back everything that happens to contain one ingredient you own."
+  - label: "Cutting redundant calls"
+    detail: "In-memory caching and API error handling reduced redundant external API calls by 73.6% across overlapping query benchmarks."
+  - label: "People type messily"
+    detail: "Nobody enters ingredients consistently. '2 cups', '2c', and 'two cups' all show up. Real-time validation, unit normalization, and unit suggestions resolve that before anything reaches the matcher."
+collaborators:
+  - { name: "Natalie Reese", url: "https://www.linkedin.com/in/nat-reese/" }
+links:
+  - { label: "Source on GitHub", url: "https://github.com/shadyyr/cooked" }
+  - {
+      label: "Writeup on Devpost",
+      url: "https://devpost.com/software/cooked-m9206r",
+    }
+---
+
+Built at HackUSF 2026 with Natalie Reese. I worked mainly on the backend: the
+Flask service, the matching and scoring, the caching, and the input
+normalization, plus the wiring between the frontend and backend, and the UI/UX.
+Natalie built the frontend UI and handled integration and deployment.
