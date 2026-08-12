@@ -249,13 +249,47 @@ const sitemaps = files.filter((f) => /sitemap-\d+\.xml$/.test(f));
 const urls = sitemaps.flatMap((f) =>
   [...readFileSync(f, "utf8").matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]),
 );
+/*
+  Every sitemap URL must resolve to a file a static host will actually serve
+  for that path. Both build formats are accepted:
+
+    directory  /experience -> experience/index.html
+    file       /experience -> experience.html
+
+  Only the first is served by every host without extra configuration, which is
+  why the build uses it. A bare `existsSync` on the directory is not enough:
+  the directory can exist while the index inside it does not, and that is
+  exactly the shape of the bug this check is here to catch.
+*/
 let broken = 0;
 for (const url of urls) {
   const path = new URL(url).pathname;
-  const target = path === "/" ? "index.html" : `${path.replace(/^\//, "")}.html`;
-  if (!existsSync(join(DIST, target)) && !existsSync(join(DIST, path.replace(/^\//, "")))) {
-    fail(`sitemap lists ${path}, which is not in the build`);
+  const clean = path.replace(/^\/|\/$/g, "");
+  const candidates =
+    clean === ""
+      ? ["index.html"]
+      : [join(clean, "index.html"), `${clean}.html`];
+
+  if (!candidates.some((candidate) => existsSync(join(DIST, candidate)))) {
+    fail(`sitemap lists ${path}, which no file in the build serves`);
     broken++;
+    continue;
+  }
+
+  /*
+    Resolving only through the flat form means the route depends on the host
+    rewriting a bare /experience onto experience.html. Vercel does not do that
+    by default, and this is precisely how three of four pages 404'd on the
+    first deploy while every local check passed.
+  */
+  if (
+    clean !== "" &&
+    !existsSync(join(DIST, clean, "index.html")) &&
+    existsSync(join(DIST, `${clean}.html`))
+  ) {
+    warn(
+      `${path} resolves only as ${clean}.html; it needs host-side clean URLs. Prefer build.format: "directory".`,
+    );
   }
 }
 if (urls.length && !broken) pass(`all ${urls.length} sitemap URLs resolve`);
