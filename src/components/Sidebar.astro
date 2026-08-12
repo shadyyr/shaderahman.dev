@@ -9,8 +9,13 @@ const resume = findResume();
 
 <nav class="sidebar" aria-label="Primary">
   <div class="navgroup">
-    <p class="navgroup__label" id="nav-sections">Sections</p>
-    <ul class="navlist" aria-labelledby="nav-sections">
+    {/*
+      `cd` and `visit` are visual flavour, matching the command palette. They
+      are hidden from assistive tech because "cd" is not a useful name to hear
+      announced; the list carries the meaningful name on aria-label instead.
+    */}
+    <p class="navgroup__label" aria-hidden="true">cd</p>
+    <ul class="navlist" aria-label="Sections">
       {
         ROUTES.map((route) => (
           <li>
@@ -34,8 +39,8 @@ const resume = findResume();
   </div>
 
   <div class="navgroup">
-    <p class="navgroup__label" id="nav-elsewhere">Elsewhere</p>
-    <ul class="navlist" aria-labelledby="nav-elsewhere">
+    <p class="navgroup__label" aria-hidden="true">visit</p>
+    <ul class="navlist" aria-label="Elsewhere">
       <li>
         <ExternalKey
           href={SITE.socials.github}
