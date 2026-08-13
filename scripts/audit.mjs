@@ -195,9 +195,14 @@ for (const file of pages) {
     pass("no CSS uppercasing");
   }
 
-  const emDashes = (text.match(/—/g) ?? []).length;
+  /*
+    Matched via the \u2014 escape rather than a literal character, so that a
+    sweep of the repo for it comes back empty including in the file doing the
+    sweeping. Otherwise the detector is the only match its own rule can find.
+  */
+  const emDashes = (text.match(/\u2014/g) ?? []).length;
   if (emDashes) {
-    const sample = text.match(/[^.\n]{0,50}—[^.\n]{0,50}/)?.[0]?.trim();
+    const sample = text.match(/[^.\n]{0,50}\u2014[^.\n]{0,50}/)?.[0]?.trim();
     fail(`${emDashes} em dash(es) in rendered copy: "${sample}"`);
   } else {
     pass("no em dashes");
@@ -230,7 +235,7 @@ if (maps.length) fail(`${maps.length} source maps shipped`);
 else pass("no source maps");
 
 const leaked = files.filter((f) =>
-  /CLAUDE\.md|AGENTS\.md|\.cursorrules|\.env$/i.test(f),
+  /CLAUDE\.md|AGENTS\.md|HANDOFF\.md|\.cursorrules|\.env$/i.test(f),
 );
 if (leaked.length) fail(`agent/env files in build: ${leaked.join(", ")}`);
 else pass("no agent or env files in build");

@@ -24,9 +24,10 @@ Thumbs.db
 .vscode/
 .idea/
 
-# agent config, never deploy these
+# internal notes and agent config, never deploy these
 CLAUDE.md
 AGENTS.md
+HANDOFF.md
 .cursorrules
 .cursor/
 .claude/
