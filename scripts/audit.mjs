@@ -163,6 +163,8 @@ for (const file of pages) {
     "realm of", "in today's fast-paced", "dive into", "unlock the",
     "best-in-class", "world-class", "synergy", "paradigm", "testament to",
     "embark", "streamline", "supercharge", "get started today",
+    // Named explicitly in the original brief and somehow never added.
+    "rocket",
   ];
   const text = html
     .replace(/<script[\s\S]*?<\/script>/gi, "")
