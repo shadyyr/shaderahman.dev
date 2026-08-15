@@ -172,6 +172,34 @@ a:active {
   translate: 0 1px;
 }
 
+/* ---------------------------------------------------------------- cursor --
+   The pointer from the logo, doubled to 14x22, as the actual cursor. It obeys
+   the same split as everything else on the site: amber while you are over
+   content, blue the moment you are over something you can act on.
+
+   Fine pointers only; a touch device has no cursor to theme. Users who ask
+   for more contrast keep their system cursor for the same reason they lose
+   the CRT overlay: the OS cursor honors size and contrast settings that a
+   32px PNG cannot.
+
+   State cursors are deliberately not themed. help on the glossary, text in
+   the palette input, and not-allowed on a disabled key all carry meaning in
+   shapes people already know, and their own declarations outrank the body's
+   inherited cursor, so they stay system. The keyword after each url() is the
+   required fallback if the image fails to load.
+
+   Hotspot 1 1 is the arrow's tip, computed by scripts/generate-assets.mjs
+   from the glyph itself and printed on every run; keep these in sync with it. */
+@media (pointer: fine) and (prefers-contrast: no-preference) {
+  body {
+    cursor: url("/cursor-default.png") 1 1, default;
+  }
+
+  a {
+    cursor: url("/cursor-pointer.png") 1 1, pointer;
+  }
+}
+
 /* --------------------------------------------------------------- CRT ------
    Scanlines and vignette, both fixed and both non-interactive. Held at low
    opacity on purpose: the effect should register as texture, not as a filter

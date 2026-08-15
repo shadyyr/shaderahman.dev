@@ -242,6 +242,24 @@ const leaked = files.filter((f) =>
 if (leaked.length) fail(`agent/env files in build: ${leaked.join(", ")}`);
 else pass("no agent or env files in build");
 
+/*
+  Every root-relative url() in the shipped CSS must resolve to a file in the
+  build. Fonts and cursors both load this way, and a missing one fails
+  silently: the font stack falls through and the cursor falls back to its
+  keyword, so nothing visibly breaks in a quick look while the page quietly
+  degrades. Fragment, data:, and absolute urls are out of scope on purpose.
+*/
+const cssRefs = new Set(
+  pages.flatMap((f) => {
+    const html = readFileSync(f, "utf8");
+    return [...html.matchAll(/url\(["']?(\/[^"')?#]+)/g)].map((m) => m[1]);
+  }),
+);
+const missingRefs = [...cssRefs].filter((ref) => !existsSync(join(DIST, ref)));
+if (missingRefs.length)
+  fail(`CSS references missing files: ${missingRefs.join(", ")}`);
+else pass(`all ${cssRefs.size} CSS url() targets resolve`);
+
 const js = files.filter((f) => extname(f) === ".js");
 const jsBytes = js.reduce((sum, f) => sum + statSync(f).size, 0);
 const inlineBytes = pages.reduce((sum, f) => {
