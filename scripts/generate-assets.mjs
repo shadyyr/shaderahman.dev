@@ -25,22 +25,15 @@ const FAINT = "#5c3f11";
 
 /* ------------------------------------------------------------------ icons - */
 
-const favicon = await readFile(new URL("favicon.svg", OUT));
-
 /*
-  Two marks, because one cannot do both jobs.
-
-  favicon.svg is the S alone. It is 26x25 cells, so it fills a square, and its
-  strokes still land around 5px at 32px. The full lockup at that size is 78
-  cells across, which puts a one-cell stroke under half a pixel and turns the
-  tab icon into a smudge.
-
-  logo.svg is the full S / R lockup with the cursor, used everywhere there is
-  room for it: the 180px touch icon and the 1200px card.
+  Everything below derives from logo.svg, the vectorised S / R lockup. The
+  favicon, the touch icon, and the two cursors all use the pointer glyph cut
+  out of it; the og card uses the whole lockup. One drawing, one extraction,
+  nothing drawn twice.
 */
 const logoSvg = await readFile(new URL("logo.svg", OUT), "utf8");
 /** Read from the art itself, so redrawing the logo cannot desync these. */
-const [, LOGO_CELLS_W, LOGO_CELLS_H] = logoSvg
+const [, LOGO_CELLS_W] = logoSvg
   .match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/)
   .map(Number);
 /** The bare rects, so the lockup can be placed inside a larger SVG. */
@@ -48,19 +41,50 @@ const logoInner = logoSvg
   .replace(/^[\s\S]*?<svg[^>]*>/, "")
   .replace(/<\/svg>\s*$/, "");
 
-/**
- * The lockup is 2.69:1 and a touch icon is square, so it is centred with a
- * margin rather than stretched. iOS gives transparency a white box, which is
- * why this is flattened onto the site ground rather than left transparent.
- */
-const touchScale = 156 / LOGO_CELLS_W;
+/*
+  The pointer glyph. The R ends at column 66 and a four-column gap separates
+  it from the cursor, so x >= 68 selects exactly the cursor's rects: 7x11
+  cells, amber outline, dark interior.
+*/
+const cursorRects = [...logoInner.matchAll(
+  /<rect x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)" fill="([^"]+)"\/>/g,
+)]
+  .map(([, x, y, w, h, f]) => ({ x: +x, y: +y, w: +w, h: +h, f }))
+  .filter((r) => r.x >= 68);
+
+const cMinX = Math.min(...cursorRects.map((r) => r.x));
+const cMinY = Math.min(...cursorRects.map((r) => r.y));
+const CURSOR_W = Math.max(...cursorRects.map((r) => r.x + r.w)) - cMinX;
+const CURSOR_H = Math.max(...cursorRects.map((r) => r.y + r.h)) - cMinY;
+
+/** The glyph's rects, normalised to origin, optionally recoloured. */
+const pointer = (recolor = {}) =>
+  cursorRects
+    .map((r) => {
+      const fill = recolor[r.f] ?? r.f;
+      return `<rect x="${r.x - cMinX}" y="${r.y - cMinY}" width="${r.w}" height="${r.h}" fill="${fill}"/>`;
+    })
+    .join("");
+
+/*
+  favicon: the pointer on the site ground. A 16-unit viewBox rasterises at
+  exactly 2px per cell in the 32px ico, which keeps the pixel art crisp, and
+  the half-unit offsets centre the 7x11 glyph while still landing every edge
+  on a whole pixel at 2x.
+*/
+const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-label="Pointer"><title>shaderahman.dev</title><rect width="16" height="16" fill="${BG}"/><g transform="translate(4.5 2.5)">${pointer()}</g></svg>`;
+await writeFile(new URL("favicon.svg", OUT), faviconSvg);
+
+/*
+  Touch icon: the same glyph at 12x, centred on the 180 canvas. iOS gives
+  transparency a white box, so it is flattened onto the site ground.
+*/
 const touch = `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180" shape-rendering="crispEdges">
   <rect width="180" height="180" fill="${BG}"/>
-  <g transform="translate(12 ${(180 - LOGO_CELLS_H * touchScale) / 2}) scale(${touchScale})">${logoInner}</g>
+  <g transform="translate(${(180 - CURSOR_W * 12) / 2} ${(180 - CURSOR_H * 12) / 2}) scale(12)">${pointer()}</g>
 </svg>`;
 
-await sharp(Buffer.from(touch), { density: 384 })
-  .resize(180, 180)
+await sharp(Buffer.from(touch))
   .flatten({ background: BG })
   .png()
   .toFile(out("apple-touch-icon.png"));
@@ -69,7 +93,7 @@ await sharp(Buffer.from(touch), { density: 384 })
  * ICO with a single 32x32 PNG payload. Every browser since IE11 reads
  * PNG-in-ICO, which makes the 6-image ico files of 2010 unnecessary.
  */
-const ico32 = await sharp(favicon, { density: 384 }).resize(32, 32).png().toBuffer();
+const ico32 = await sharp(Buffer.from(faviconSvg)).resize(32, 32).png().toBuffer();
 
 const header = Buffer.alloc(6);
 header.writeUInt16LE(0, 0); // reserved
@@ -87,6 +111,39 @@ entry.writeUInt32LE(ico32.length, 8);
 entry.writeUInt32LE(header.length + entry.length, 12);
 
 await writeFile(new URL("favicon.ico", OUT), Buffer.concat([header, entry, ico32]));
+
+/* --------------------------------------------------------------- cursors - */
+
+/*
+  The same glyph served as the actual cursor, in two colorways, because the
+  cursor obeys the same rule as everything else: amber while you are over
+  content, blue the moment you are over something you can act on.
+
+  32x32 is the ceiling browsers respect without side effects; Chrome ignores
+  larger cursors near the viewport edge. At scale 2 the 7x11 glyph lands at
+  14x22, about the size of a system arrow.
+*/
+const CURSOR_SCALE = 2;
+const CURSOR_PAD = 1;
+
+/*
+  The hotspot is the arrow's tip: the leftmost cell of the topmost row, which
+  is where a click should land. Computed off the rects rather than assumed,
+  then scaled the same way the glyph is.
+*/
+const tipRow = Math.min(...cursorRects.map((r) => r.y));
+const tipX = Math.min(...cursorRects.filter((r) => r.y === tipRow).map((r) => r.x));
+const HOTSPOT_X = CURSOR_PAD + (tipX - cMinX) * CURSOR_SCALE;
+const HOTSPOT_Y = CURSOR_PAD;
+
+const cursorSvg = (recolor) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" shape-rendering="crispEdges"><g transform="translate(${CURSOR_PAD} ${CURSOR_PAD}) scale(${CURSOR_SCALE})">${pointer(recolor)}</g></svg>`;
+
+// No flatten: a cursor needs its transparency.
+await sharp(Buffer.from(cursorSvg({}))).png().toFile(out("cursor-default.png"));
+await sharp(Buffer.from(cursorSvg({ "#ffb000": BLUE }))).png().toFile(out("cursor-pointer.png"));
+
+console.log(`cursor glyph ${CURSOR_W}x${CURSOR_H} cells, hotspot ${HOTSPOT_X} ${HOTSPOT_Y}`);
 
 /* --------------------------------------------------------------- og card - */
 
@@ -190,4 +247,6 @@ const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" vi
 
 await sharp(Buffer.from(og)).png().toFile(out("og.png"));
 
-console.log("wrote apple-touch-icon.png, favicon.ico, og.png");
+console.log(
+  "wrote favicon.svg, favicon.ico, apple-touch-icon.png, cursor-default.png, cursor-pointer.png, og.png",
+);
