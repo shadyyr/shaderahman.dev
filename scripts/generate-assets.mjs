@@ -67,25 +67,30 @@ const pointer = (recolor = {}) =>
     .join("");
 
 /*
-  favicon: the pointer on the site ground. A 16-unit viewBox rasterises at
-  exactly 2px per cell in the 32px ico, which keeps the pixel art crisp, and
-  the half-unit offsets centre the 7x11 glyph while still landing every edge
-  on a whole pixel at 2x.
+  favicon: the pointer on a transparent ground, so it sits on whatever the
+  tab bar's own color is in either theme. The amber outline reads on both;
+  the dark interior only ever borders amber, so it never disappears into a
+  dark tab. A 16-unit viewBox rasterises at exactly 2px per cell in the 32px
+  ico, which keeps the pixel art crisp, and the half-unit offsets centre the
+  7x11 glyph while still landing every edge on a whole pixel at 2x.
 */
-const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-label="Pointer"><title>shaderahman.dev</title><rect width="16" height="16" fill="${BG}"/><g transform="translate(4.5 2.5)">${pointer()}</g></svg>`;
+const faviconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 16 16" shape-rendering="crispEdges" role="img" aria-label="Pointer"><title>shaderahman.dev</title><g transform="translate(4.5 2.5)">${pointer()}</g></svg>`;
 await writeFile(new URL("favicon.svg", OUT), faviconSvg);
 
 /*
-  Touch icon: the same glyph at 12x, centred on the 180 canvas. iOS gives
-  transparency a white box, so it is flattened onto the site ground.
+  Touch icon: the same glyph at 12x, centred on the 180 canvas, transparent
+  like the favicon. Know that iOS does not honour the alpha: home screen
+  icons get the system's own backing painted behind any transparency, black
+  there and white in some Safari surfaces, so on an iPhone this lands on
+  black rather than showing through. It ships transparent anyway because
+  every other consumer of the file keeps the alpha, and black is close
+  enough to the site's near-black ground to pass.
 */
 const touch = `<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180" shape-rendering="crispEdges">
-  <rect width="180" height="180" fill="${BG}"/>
   <g transform="translate(${(180 - CURSOR_W * 12) / 2} ${(180 - CURSOR_H * 12) / 2}) scale(12)">${pointer()}</g>
 </svg>`;
 
 await sharp(Buffer.from(touch))
-  .flatten({ background: BG })
   .png()
   .toFile(out("apple-touch-icon.png"));
 
