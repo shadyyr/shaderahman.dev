@@ -128,16 +128,19 @@ const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" vi
   <!--
     Every anchor below is different on purpose, and they are not typos.
 
-    The left margin is 129. Courier carries a left side bearing that scales
-    with font size, so a text anchored at 129 does not start its first stroke
-    there, and the error differs per line: at 92px the name needs 123, at 34px
-    the field line needs 127, at 28px the nav row needs 127. The logo and the
-    divider are bare geometry with no bearing at all, so they sit at a true
-    129. All five were measured off the rendered PNG until each reported a
-    visual left edge of exactly 129.
+    The card sits on a single 56px margin: 56 in from the window on all four
+    sides, and every element flush to it. Measured, not assumed.
+
+    Courier carries a left side bearing that scales with font size, so a text
+    anchored at 129 does not start its first stroke there, and the error
+    differs per line. To land a visual edge on 129 the name needs an anchor of
+    124 at 92px, and the field line and nav row need 127 at 34px and 28px. The
+    right edge is the same problem mirrored, so the domain ends at 1072 to put
+    its last stroke on 1070. The logo and the divider are bare geometry with no
+    bearing at all, so they sit at a true 129 and 1070.
 
     Change a font size here and the bearing changes with it, so re-measure
-    rather than assuming the anchor still holds.
+    rather than assuming an anchor still holds.
 
     Sizes and rhythm both measured off the render rather than guessed.
 
@@ -150,22 +153,21 @@ const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" vi
     the name, which is the element that should carry the card. A mark that
     competes with the name for attention is the wrong mark.
 
-    The interior runs 124 to 558. The five blocks total roughly 176px, so the
-    air is placed deliberately:
+    The interior runs 124 to 556, and the air in it is placed deliberately:
 
-      56  above the logo
-      42  logo to name
-      20  name to field       tight, the field line is a subtitle of the name
+      56  above the logo          equal to the side margins
+      44  logo to name
+      19  name to field           tight, the field line is a subtitle
       44  field to divider
-      40  divider to nav
-      56  below the nav
+      42  divider to nav
+      56  below the nav           equal to the side margins
 
     Growing type without opening the gaps in step is what would overcrowd it,
     so both moved together.
   -->
   <g transform="translate(129 180) scale(${170 / LOGO_CELLS_W})">${logoInner}</g>
 
-  <text x="123" y="344" font-family="${MONO}" font-size="92" font-weight="bold" fill="${AMBER_HI}">${escape(NAME)}</text>
+  <text x="124" y="344" font-family="${MONO}" font-size="92" font-weight="bold" fill="${AMBER_HI}">${escape(NAME)}</text>
   <!-- Authored in the casing it renders in. The old .toUpperCase() here was
        the same lossy transform the CSS rule bans everywhere else. -->
   <text x="127" y="386" font-family="${MONO}" font-size="34" fill="${AMBER_DIM}" letter-spacing="4">${FIELD}</text>
@@ -174,8 +176,8 @@ const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" vi
        anchor. 129 in and 129 out, against a window that spans 72 to 1128. -->
   <line x1="129" y1="436" x2="1071" y2="436" stroke="${FAINT}" stroke-width="2"/>
 
-  <text x="127" y="494" font-family="${MONO}" font-size="28" fill="${AMBER_DIM}">experience &#183; projects &#183; skills</text>
-  <text x="1073" y="494" font-family="${MONO}" font-size="28" fill="${BLUE}" text-anchor="end">${DOMAIN}</text>
+  <text x="127" y="496" font-family="${MONO}" font-size="28" fill="${AMBER_DIM}">experience &#183; projects &#183; skills</text>
+  <text x="1072" y="496" font-family="${MONO}" font-size="28" fill="${BLUE}" text-anchor="end">${DOMAIN}</text>
 
   <!-- scanlines -->
   <defs>
