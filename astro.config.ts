@@ -33,6 +33,19 @@ export default defineConfig({
   vite: {
     build: {
       sourcemap: false,
+      /*
+        esbuild minifies (max-width: 56rem) into the Media Queries Level 4
+        range form, (width <= 56rem), whenever it believes the target supports
+        it. That form needs Safari 16.4. Older Safari cannot parse the
+        condition and throws the whole block away, so every responsive rule on
+        the site disappears and a 375px phone lays itself out on the desktop
+        grid: a 240px sidebar against about 135px of content.
+
+        Pinning the CSS target keeps the queries in the form they were written
+        in. Verify against the built CSS, not the source, because the source
+        looks correct either way.
+      */
+      cssTarget: "safari15",
     },
   },
 });
