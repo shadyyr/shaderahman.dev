@@ -39,5 +39,5 @@ links:
 
 Built at HackUSF 2026 with Natalie Reese. I worked mainly on the backend: the
 Flask service, the matching and scoring, the caching, and the input
-normalization, plus the wiring between the frontend and backend, and the UI/UX.
-Natalie built the frontend UI and handled integration and deployment.
+normalization. I also did the wiring between the frontend and backend, and the
+UI/UX. Natalie built the frontend UI and handled integration and deployment.

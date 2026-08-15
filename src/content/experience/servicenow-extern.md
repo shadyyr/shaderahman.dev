@@ -34,6 +34,6 @@ tags:
 
 Two months before the PeakActivity internship, and the reason the agentic
 workflow work there felt familiar rather than foreign. The heaviest module by
-far was data management, which is the correct lesson: the interesting part of a
+far was data management, and that is the correct lesson: the interesting part of a
 workflow platform is almost never the workflow, it is the shape of the data
 underneath it.
