@@ -19,7 +19,7 @@ tech:
   ]
 highlights:
   - label: "A model was retired mid-build"
-    detail: "The production Gemini model the vision pipelines ran on was retired while the project was still being built. I replaced it with a 4-model automatic fallback chain and a 9-category error taxonomy across both pipelines, appliance-label OCR and utility-bill parsing, which took single-model outages off the table entirely."
+    detail: "The production Gemini model the vision pipelines ran on was retired while the project was still being built. I replaced it with a 4-model automatic fallback chain and a 9-category error taxonomy across both pipelines (appliance-label OCR and utility-bill parsing), which took single-model outages off the table entirely."
   - label: "Five engines, six routes"
     detail: "Rebate matching, affordability simulation, outage-resilience planning, group-buying, and proactive coaching, across 6 REST API routes. Benchmarked at 9,600+ evaluations per second, averaging 0.104ms per call, with 8 of 8 unit tests passing."
   - label: "What was broken"
@@ -47,7 +47,7 @@ links:
 ---
 
 Built at BloomKnights 2026. The reliability work was not planned. It was a
-response to the Gemini model disappearing underneath us partway through, which
+response to the Gemini model disappearing underneath us partway through, and it
 turned out to be the most useful thing in the project. Anything depending on one
 model has a single point of failure that a hackathon timeline will happily
 expose.

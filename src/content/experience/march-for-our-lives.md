@@ -9,7 +9,7 @@ start: "2022-08"
 end: "2024-05"
 summary: >-
   A close friend and I started a chapter at our high school. March For Our
-  Lives is a student-led organization founded in 2018 against gun violence,
+  Lives is a student-led organization against gun violence, founded in 2018,
   and the point of the chapter was making sure people around us were informed
   before they got to a ballot rather than after.
 bullets:

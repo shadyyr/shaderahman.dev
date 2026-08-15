@@ -6,7 +6,7 @@ period: "Sep – Dec 2025"
 date: "2025-12"
 summary: >-
   A team build of a RISC-V CPU system-on-chip that runs video games on an FPGA,
-  run through IEEE at UCF. Hardware is the half of computer engineering a
+  done through IEEE at UCF. Hardware is the half of computer engineering a
   software portfolio usually leaves out.
 tech: ["Verilog", "FPGA", "RISC-V", "RTL Design"]
 highlights:
