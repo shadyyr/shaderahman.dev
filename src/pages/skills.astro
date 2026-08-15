@@ -58,7 +58,7 @@ const evidenceFor = (name: string) => usage.get(name.trim().toLowerCase()) ?? []
   <PageHead
     eyebrow="Tools of the trade"
     heading="Skills"
-    lede="No percentage bars. There is no honest way to render one, so each entry points at the work where it was actually used."
+    lede="No percentage bars. There is no honest way to render one, so each entry points at the work where the skill was actually used."
   />
 
   <div class="categories">
@@ -144,8 +144,14 @@ const evidenceFor = (name: string) => usage.get(name.trim().toLowerCase()) ?? []
     display: grid;
     gap: var(--s8);
     /* Two columns at desktop width rather than three. Three leaves the fourth
-       category stranded alone on its own row. */
-    grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+       category stranded alone on its own row.
+
+       The min() is load-bearing on phones. minmax() treats 24rem as a hard
+       floor, not a preference, so auto-fit cannot shrink past 384px and the
+       panel hangs off the side of anything narrower. Capping the floor at
+       100% lets it collapse. Above 384px this resolves to 24rem and the
+       desktop grid is unchanged. */
+    grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
     align-items: start;
   }
 
@@ -202,7 +208,8 @@ const evidenceFor = (name: string) => usage.get(name.trim().toLowerCase()) ?? []
     margin-top: var(--s10);
     display: grid;
     gap: var(--s8);
-    grid-template-columns: repeat(auto-fit, minmax(24rem, 1fr));
+    /* Same floor, same reason as .categories above. */
+    grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
     align-items: start;
   }
 
