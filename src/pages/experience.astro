@@ -3,13 +3,18 @@ import { getCollection } from "astro:content";
 import OsLayout from "../layouts/OsLayout.astro";
 import PageHead from "../components/PageHead.astro";
 import ExperienceEntry from "../components/ExperienceEntry.astro";
+import ExperienceGroup from "../components/ExperienceGroup.astro";
 import Tag from "../components/Tag.astro";
-import { byRecency, formatRange } from "../lib/format";
+import { byRecency, formatRange, groupByOrg } from "../lib/format";
 import { EDUCATION } from "../lib/site";
 
 const entries = (await getCollection("experience"))
   .filter((entry) => !entry.data.draft)
   .sort((a, b) => byRecency(a.data, b.data));
+
+// Consecutive roles at one organisation share a card, so a promotion track
+// reads as one thing. A run of one renders exactly as it always did.
+const units = groupByOrg(entries, (entry) => entry.data);
 ---
 
 <OsLayout
@@ -28,7 +33,15 @@ const entries = (await getCollection("experience"))
   />
 
   <ul class="entries">
-    {entries.map((entry) => <ExperienceEntry entry={entry} level={2} />)}
+    {
+      units.map((roles) =>
+        roles.length > 1 ? (
+          <ExperienceGroup roles={roles} />
+        ) : (
+          <ExperienceEntry entry={roles[0]} level={2} />
+        ),
+      )
+    }
   </ul>
 
   <section class="panel education" aria-labelledby="education-heading">

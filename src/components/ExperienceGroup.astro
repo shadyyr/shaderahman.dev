@@ -1,0 +1,232 @@
+---
+import { render, type CollectionEntry } from "astro:content";
+import { formatMonth, formatRange, emphasize } from "../lib/format";
+import Tag from "./Tag.astro";
+
+interface Props {
+  /** Contiguous roles at one organisation, newest first. */
+  roles: CollectionEntry<"experience">[];
+}
+
+const { roles } = Astro.props;
+
+/*
+  The card opens on the current role and reads exactly like a single-role card:
+  same heading shape, same meta line, same order underneath. That is deliberate.
+  Leading with the organisation instead made this the one card on the page that
+  announced a club where every other announced a job title, and it broke the
+  scan.
+
+  The earlier roles then sit below a rule as the progression.
+*/
+const [lead, ...earlier] = roles;
+const oldest = roles[roles.length - 1].data;
+
+/*
+  The tenure line is the reason for grouping at all. Split across three cards,
+  each role showed a four to seven month stint and the run they belong to was
+  invisible. "since" only holds while the newest role is open; if it ever ends,
+  the closed range is the honest form.
+*/
+const tenure =
+  lead.data.end == null
+    ? `${roles.length} roles since ${formatMonth(oldest.start)}`
+    : `${roles.length} roles, ${formatRange(oldest.start, lead.data.end)}`;
+
+const rendered = await Promise.all(
+  roles.map(async (entry) => ({
+    entry,
+    Content: (await render(entry)).Content,
+    hasBody: entry.body != null && entry.body.trim().length > 0,
+  })),
+);
+const [leadRendered, ...earlierRendered] = rendered;
+---
+
+<li class="entry">
+  <div class="entry__head">
+    <h2 class="entry__title">
+      {lead.data.role}
+      <span class="entry__sep" aria-hidden="true"> · </span>
+      <span class="entry__org">
+        {
+          lead.data.companyUrl ? (
+            <a href={lead.data.companyUrl} target="_blank" rel="noopener noreferrer">
+              {lead.data.company}
+            </a>
+          ) : (
+            lead.data.company
+          )
+        }
+      </span>
+    </h2>
+    <p class="entry__meta">
+      <span>{formatRange(lead.data.start, lead.data.end)}</span>
+      <span aria-hidden="true"> · </span>
+      <span>{lead.data.location}</span>
+    </p>
+  </div>
+
+  <p class="tenure">{tenure}</p>
+
+  <p class="entry__summary">{lead.data.summary}</p>
+
+  <ul class="entry__bullets">
+    {lead.data.bullets.map((bullet) => <li set:html={emphasize(bullet)} />)}
+  </ul>
+
+  {
+    lead.data.tags.length > 0 && (
+      <ul class="tags">
+        {lead.data.tags.map((tag) => (
+          <Tag name={tag.name} starred={tag.starred} />
+        ))}
+      </ul>
+    )
+  }
+
+  {
+    leadRendered.hasBody && (
+      <div class="entry__detail prose">
+        <leadRendered.Content />
+      </div>
+    )
+  }
+
+  {
+    lead.data.links.length > 0 && (
+      <p class="entry__links">
+        {lead.data.links.map((link) => (
+          <a href={link.url} target="_blank" rel="noopener noreferrer">
+            {link.label}
+          </a>
+        ))}
+      </p>
+    )
+  }
+
+  <div class="earlier">
+    {/*
+      A label rather than a heading. The roles below are h3 under the card's
+      h2, and slotting a section heading in between would push them to h4 for
+      no gain in the outline.
+    */}
+    <p class="earlier__label">Previously at this organization</p>
+
+    <ul class="earlier__list">
+      {
+        earlierRendered.map(({ entry, Content, hasBody }, index) => (
+          <li class="earlier__role">
+            <div class="entry__head">
+              <h3 class="entry__title">{earlier[index].data.role}</h3>
+              <p class="entry__meta">
+                <span>{formatRange(entry.data.start, entry.data.end)}</span>
+              </p>
+            </div>
+
+            <p class="entry__summary">{entry.data.summary}</p>
+
+            <ul class="entry__bullets">
+              {entry.data.bullets.map((bullet) => (
+                <li set:html={emphasize(bullet)} />
+              ))}
+            </ul>
+
+            {entry.data.tags.length > 0 && (
+              <ul class="tags">
+                {entry.data.tags.map((tag) => (
+                  <Tag name={tag.name} starred={tag.starred} />
+                ))}
+              </ul>
+            )}
+
+            {hasBody && (
+              <div class="entry__detail prose">
+                <Content />
+              </div>
+            )}
+
+            {entry.data.links.length > 0 && (
+              <p class="entry__links">
+                {entry.data.links.map((link) => (
+                  <a href={link.url} target="_blank" rel="noopener noreferrer">
+                    {link.label}
+                  </a>
+                ))}
+              </p>
+            )}
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</li>
+
+<style>
+  .entry__sep {
+    color: var(--amber-faint);
+  }
+
+  .tenure {
+    margin-top: var(--s2);
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.08em;
+    color: var(--amber-dim);
+  }
+
+  /*
+    The same rule that separates a markdown body from the bullets above it, so
+    the divider is one the page already uses rather than a new device.
+  */
+  .earlier {
+    margin-top: var(--s8);
+    padding-top: var(--s5);
+    border-top: 1px solid var(--amber-ghost);
+  }
+
+  /*
+    Given room on both sides. Pinched between the rule above and a 17px role
+    title below, an 11px label just reads as a stray line.
+  */
+  .earlier__label {
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.08em;
+    color: var(--amber-dim);
+    margin-bottom: var(--s6);
+  }
+
+  /*
+    Flush left, not indented. Lining these up with the lead role above, and so
+    with every other card on the page, is the whole point of this layout.
+  */
+  .earlier__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s6);
+  }
+
+  /*
+    Roles need a harder break between them than the elements inside one. A
+    summary sits 12px off its title and bullets 16px off the summary, so the
+    24px gap alone left two whole roles reading as one continuous block. The
+    rule is the same hairline the card already uses to fence off a body.
+  */
+  .earlier__role + .earlier__role {
+    padding-top: var(--s6);
+    border-top: 1px solid var(--amber-ghost);
+  }
+
+  .prose :global(p) {
+    color: var(--amber-dim);
+    max-width: var(--measure);
+  }
+
+  .prose :global(p + p) {
+    margin-top: var(--s3);
+  }
+</style>
