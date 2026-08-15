@@ -30,7 +30,7 @@ const buildDate = new Date().toISOString().slice(0, 10);
   path="/"
   isHome
 >
-  <PageHead eyebrow={`${SITE.system.label} · ready`} heading={SITE.name}>
+  <PageHead eyebrow={`${SITE.system.label} · ready`} heading={SITE.name} tight>
     <p class="tagline">{SITE.role} · {SITE.location}</p>
   </PageHead>
 
@@ -112,7 +112,7 @@ const buildDate = new Date().toISOString().slice(0, 10);
     {
       featured.length > 0 && (
         <section aria-labelledby="featured-heading">
-          <h2 id="featured-heading">Selected work</h2>
+          <h2 class="featured__title" id="featured-heading">Selected work</h2>
           <ul class="entries">
             {featured.map((entry) => (
               <ProjectEntry entry={entry} compact level={3} />
@@ -156,6 +156,17 @@ const buildDate = new Date().toISOString().slice(0, 10);
     font-size: var(--text-sm);
     letter-spacing: 0.08em;
     color: var(--amber-dim);
+  }
+
+  /*
+    The only section heading on the site that is not a notched panel title.
+    Bare h2 had nothing under it, because the reset zeroes every margin and no
+    rule ever put one back, so "Selected work" sat flush on the card below it.
+    Panel titles get about 18px from their panel's padding; this matches that
+    at the larger heading size.
+  */
+  .featured__title {
+    margin-bottom: var(--s5);
   }
 
   .intro {

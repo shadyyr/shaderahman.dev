@@ -468,10 +468,19 @@ a:active {
   background: none;
 }
 
+/*
+  left is --s3, not --s4, and the two tokens below it are why.
+
+  The title is absolutely positioned against the panel's padding box, so it
+  clears the 1px border, then adds its own --s2 of horizontal padding to notch
+  the rule. That put its first glyph at 25px from the panel edge while the
+  panel's own content sits at 21px, leaving every panel label on the site 4px
+  right of the content it labels. 12 + 1 border + 8 padding lands both on 21.
+*/
 .panel__title {
   position: absolute;
   top: 0;
-  left: var(--s4);
+  left: var(--s3);
   translate: 0 -50%;
   padding: 0 var(--s2);
   background: var(--bg);
@@ -540,6 +549,20 @@ hr {
 
 .pagehead {
   margin-bottom: var(--s8);
+}
+
+/*
+  For a page whose header ends in a one-line tagline and is followed by plain
+  prose rather than a bordered card.
+
+  The measured gap is the same 32px on every page, but it does not read the
+  same. On /experience the 32px is closed immediately by a card border, which
+  gives the eye something to land on. On the home page nothing terminates it,
+  so a short 13px line is followed by 40px of blank before the paragraph and
+  the header appears to float away from its own content.
+*/
+.pagehead--tight {
+  margin-bottom: var(--s6);
 }
 
 .pagehead__eyebrow {
