@@ -22,6 +22,5 @@ tags:
   - { name: "Community" }
 ---
 
-The oldest thing on this page and still one I care about. The goal was never
-just to make an event happen. It was to make it worth showing up to, and worth
-remembering afterwards.
+Still something I care about. The goal was never just to make an event happen.
+It was to make it worth showing up to, and worth remembering afterwards.
