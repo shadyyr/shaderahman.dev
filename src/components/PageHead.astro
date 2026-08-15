@@ -5,12 +5,17 @@ interface Props {
   /** The page's only <h1>. Exactly one per route, enforced by using this. */
   heading: string;
   lede?: string;
+  /**
+   * Closes the gap under the header for pages that run straight into prose.
+   * A bordered card closes that space on its own; a paragraph does not.
+   */
+  tight?: boolean;
 }
 
-const { eyebrow, heading, lede } = Astro.props;
+const { eyebrow, heading, lede, tight = false } = Astro.props;
 ---
 
-<div class="pagehead">
+<div class:list={["pagehead", { "pagehead--tight": tight }]}>
   {eyebrow && <p class="pagehead__eyebrow">{eyebrow}</p>}
   <h1>{heading}</h1>
   {lede && <p class="pagehead__lede">{lede}</p>}
