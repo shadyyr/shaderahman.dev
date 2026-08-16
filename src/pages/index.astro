@@ -124,12 +124,12 @@ const buildDate = new Date().toISOString().slice(0, 10);
         Everything else here works with JavaScript switched off.
       </p>
       <p>
-        Display type is <a href="https://departuremono.com">Departure Mono</a> by
-        Helena Zhang; body type is IBM Plex Mono. Both are licensed under the
+        Display type is <a href="https://departuremono.com">Departure Mono</a>{" "}
+        by Helena Zhang; body type is IBM Plex Mono. Both are licensed under the
         SIL Open Font License and served from this domain.
       </p>
       <p class="colophon__meta">
-        Last built {buildDate} ·{" "}
+        <span>Last built {buildDate}</span>
         <a href={`${SITE.socials.github}/shaderahman.dev`}>Source</a>
       </p>
     </section>
@@ -138,11 +138,17 @@ const buildDate = new Date().toISOString().slice(0, 10);
 
 <style>
   /* "Computer Engineering Student · Orlando, FL". A role title and a city,
-     both of which have their own capitalisation. Left alone. */
+     both of which have their own capitalisation. Left alone.
+
+     11px, not 13. Departure Mono is drawn for multiples of 11 and its author
+     asks for it to be set that way; this was the one element on the site
+     setting the display face at 13px, where the pixel grid it is drawn on does
+     not land on whole pixels. It now matches the eyebrow above the heading,
+     which is the same kind of line doing the same job. */
   .tagline {
     margin-top: var(--s3);
     font-family: var(--font-display);
-    font-size: var(--text-sm);
+    font-size: var(--text-micro);
     letter-spacing: 0.08em;
     color: var(--amber-dim);
   }
@@ -267,16 +273,47 @@ const buildDate = new Date().toISOString().slice(0, 10);
     font-size: var(--text-sm);
   }
 
+  /* Full width of the panel, via the "a box is never capped" rule in
+     global.css. This was two columns for a while, which kept every line inside
+     the measure; he looked at it and wanted the paragraph running the full
+     width of the box instead, and then wanted the same everywhere, which is
+     what put that rule in global.css rather than here. */
   .colophon p {
     color: var(--amber-dim);
     font-size: var(--text-sm);
   }
 
+  /* 12px, which tracks this block's 13px type rather than the intro's 17px.
+     The two are deliberately different numbers and look even because of it. */
   .colophon p + p {
     margin-top: var(--s3);
   }
 
-  .colophon__meta {
+  /*
+    A footer rule, which is what makes the panel read as filled rather than as
+    a short line adrift under two columns: the two paragraphs end ragged, at
+    different depths, and this closes them off across the full width.
+
+    Both ends are anchored, the way the status bar at the foot of the page
+    anchors its hints and its clock. That is also why the "·" that used to
+    separate these two is gone; a separator between two things at opposite ends
+    of a rule reads as a mistake.
+
+    The selector is `.colophon .colophon__meta`, not `.colophon__meta`, and
+    that is not a flourish. `.colophon p` above is one class plus one type and
+    outranks a single class, so this block's `font-size` silently lost to it
+    and the line had been shipping at 13px, two steps up from the 11px every
+    other label on the site uses.
+  */
+  .colophon .colophon__meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--s2) var(--s4);
+    margin-top: var(--s5);
+    padding-top: var(--s4);
+    border-top: 1px solid var(--amber-ghost);
     font-family: var(--font-display);
     font-size: var(--text-micro);
     letter-spacing: 0.08em;

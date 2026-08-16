@@ -415,9 +415,31 @@ a:active {
   min-width: 0;
 }
 
+/*
+  The side gutter has to match the chrome's, and the chrome's is --s4 at every
+  width: the title bar, the status bar and the stacked sidebar all say so
+  unconditionally.
+
+  Below 56rem the sidebar stops being a column and stacks above the content, so
+  all four of those left edges land on the same vertical line and any
+  disagreement is visible. This rule used to start at 40rem instead, which left
+  the band between the two breakpoints, 641px to 896px, with the content column
+  8px right of everything else: measured at 768, the title bar, both nav group
+  labels and the status bar all began at x=17 and the h1 and every paragraph
+  under it began at x=25. It read as the page being indented by one character.
+
+  Inline only. The vertical padding has nothing to line up against and keeps
+  its own breakpoint below.
+*/
+@media (max-width: 56rem) {
+  .content {
+    padding-inline: var(--s4);
+  }
+}
+
 @media (max-width: 40rem) {
   .content {
-    padding: var(--s6) var(--s4) var(--s10);
+    padding-block: var(--s6) var(--s10);
   }
 }
 
@@ -568,6 +590,40 @@ p {
   max-width: var(--measure);
 }
 
+/*
+  A box is never capped. Its own edges are the measure.
+
+  --measure is 68ch, and `ch` resolves against each element's own font size, so
+  one cap lands at four different pixel widths on this site: 449px at 11px,
+  530px at 13px, 612px at 15px, 694px at 17px. Inside a bordered card or panel
+  that causes two defects at once. Every block of text stops somewhere in the
+  middle of its own box, and blocks at different sizes stop in different
+  places, so a single panel could put three stacked paragraphs on three
+  different right edges. The colophon was the worst of it: 530px of text inside
+  a 948px box, ending at 56% of the width it had.
+
+  So anything inside .panel or .entry opts out, once, here. New boxes inherit
+  that automatically, which is the whole point of it living in one place: this
+  same bug was found and patched separately in the player, the colophon, the
+  education panel and the card link rows, each time with its own local
+  max-width: none, before it was clear the rule belonged centrally.
+
+  Un-boxed prose keeps the cap, because there nothing else stops a line from
+  running the full width of the page: .pagehead__lede under a page heading, the
+  intro paragraphs on the home page, the note at the foot of /404.
+
+  If you add a text element to a box and it needs a different tag than these,
+  add the tag here rather than writing max-width: none on the component.
+*/
+.panel p,
+.panel li,
+.panel dd,
+.entry p,
+.entry li,
+.entry dd {
+  max-width: none;
+}
+
 strong {
   font-weight: 600;
   color: var(--amber-max);
@@ -675,7 +731,20 @@ hr {
    span too leaves the run exactly as unbreakable as it was before.
 
    At desktop width it fits on one line either way, so nothing there changes. */
+/*
+   margin-left: auto is what keeps this on the card's right edge, and
+   justify-content on the head row is not enough to do it.
+
+   The row wraps, and a wrapped line holds one item: the meta. space-between
+   puts a lone item at flex-start, so any title long enough to push the date
+   onto its own line sent it from the right edge to the left one. At 1280 that
+   was one card in eight, "Co-Founder and Vice President · March For Our Lives",
+   sitting 663px from where the other seven dates were. At 897 it inverted and
+   seven of eight went left, so one page showed both treatments at once. auto
+   margins absorb the free space before justify-content ever sees it, on a
+   wrapped line as much as an unwrapped one. */
 .entry__meta {
+  margin-left: auto;
   font-family: var(--font-display);
   font-size: var(--text-micro);
   letter-spacing: 0.08em;
@@ -707,7 +776,6 @@ hr {
 .entry__bullets li {
   position: relative;
   padding-left: 1.6ch;
-  max-width: var(--measure);
   color: var(--amber);
 }
 
@@ -924,15 +992,36 @@ hr {
     break-inside: avoid;
   }
 
+  /*
+    Every colour on this site is set by a class, and this block used to reset
+    them with element selectors: `h1, h2, h3 { color: #000 }` and
+    `a { color: #000 }`. A class outranks a type, so those lost every cascade
+    they entered and the only thing on the page that actually turned black was
+    the one bare h1.
+
+    Measured under print emulation, .entry__title stayed #ffe1a8, which is
+    about 1.3:1 against white: the job titles and project names, the most
+    important type on the page, were printing very close to invisible. Tags
+    kept their #070503 chip fill too.
+
+    `!important` because the rules being overridden are ordinary class
+    selectors that would otherwise win on specificity, and paper has one
+    correct answer here anyway.
+
+    Pseudo-elements are deliberately left out. `*` does not match ::after, so
+    the printed URL after each external link keeps its lighter #555, and the
+    bullet en dashes keep inheriting from their li.
+  */
+  .app,
+  .app * {
+    color: #000 !important;
+    background: none !important;
+  }
+
   h1,
   h2,
   h3 {
-    color: #000;
     text-shadow: none;
-  }
-
-  a {
-    color: #000;
   }
 
   /* Paper has no hyperlinks. Print the destination. */

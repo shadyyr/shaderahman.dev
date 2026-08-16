@@ -268,6 +268,25 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
     };
 
     /*
+      How much of the track is behind the thumb, as 0 to 1. The stylesheet
+      turns it into a width.
+
+      Derived from the input's own value every time rather than accumulated, so
+      the trail cannot get out of step with the dot: seeking backwards shrinks
+      it by exactly the path playing forwards grew it, and a track change that
+      resets value to 0 resets the trail with it. One source of truth, read
+      after every write to value or max.
+    */
+    const setProgress = () => {
+      const max = Number(seek.max);
+      const value = Number(seek.value);
+      seek.style.setProperty(
+        "--progress",
+        String(max > 0 ? Math.min(1, Math.max(0, value / max)) : 0),
+      );
+    };
+
+    /*
       Artist names as links, comma separated, built as nodes rather than a
       string of html. Track and artist names arrive from an API and go straight
       into the page; textContent cannot be talked into becoming markup.
@@ -334,6 +353,7 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
       art.alt = "";
       seek.max = String(Math.round(track.d / 1000));
       seek.value = "0";
+      setProgress();
       elapsed.textContent = "0:00";
       duration.textContent = clock(track.d / 1000);
       indexOut.textContent = String(index + 1);
@@ -410,10 +430,13 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
                 if (!scrubbing && typeof data.position === "number") {
                   const seconds = data.position / 1000;
                   seek.value = String(Math.round(seconds));
+                  setProgress();
                   elapsed.textContent = clock(seconds);
                 }
                 if (typeof data.duration === "number" && data.duration > 0) {
                   seek.max = String(Math.round(data.duration / 1000));
+                  /* max moved, so the same value is now a different fraction. */
+                  setProgress();
                   duration.textContent = clock(data.duration / 1000);
 
                   /*
@@ -479,8 +502,12 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
 
     nextBtn.addEventListener("click", () => go(index + 1));
 
+    /* Tracks the drag itself, so the trail follows the thumb under the cursor
+       rather than waiting for the next position event from the embed. This is
+       also the path that shrinks it when the drag goes backwards. */
     seek.addEventListener("input", () => {
       scrubbing = true;
+      setProgress();
       elapsed.textContent = clock(Number(seek.value));
     });
 
@@ -525,26 +552,6 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
     display: flex;
     flex-direction: column;
     gap: var(--s2);
-  }
-
-  /*
-    Off the global 68ch prose cap, deliberately.
-
-    That cap is right for body copy and wrong for a control surface: it is set
-    on every p, so at 13px it stopped the notice at about 530px while the
-    transport row beside it ran to roughly 800, and the two disagreed on where
-    the right edge of this column was. It was also quietly clipping the track
-    title at 693px rather than at the width actually available, which reads as a
-    long title when it is really a stylesheet.
-
-    Everything in this column now measures to the same edge as the track counter
-    at the end of the transport row.
-  */
-  .player__track,
-  .player__artist,
-  .player__notice,
-  .player__time {
-    max-width: none;
   }
 
   /*
@@ -595,16 +602,47 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
     height: 14px;
     background: none;
     cursor: pointer;
+    /* 0 to 1, written by the script on every position change. Unitless, so the
+       arithmetic below can be done against a 100% only the browser knows. */
+    --progress: 0;
   }
 
+  /*
+    The trail behind the thumb: how far into the track you are.
+
+    Amber, not blue, and that is the palette rule rather than a preference. The
+    trail is something you read; the thumb is the only part of this you can
+    grab, so it stays the only blue thing in the control.
+
+    WebKit has no lower-fill pseudo-element, so the track paints it as a
+    two-stop gradient. The stop is not a plain percentage, and that is the
+    whole trick: the thumb is 10px wide and travels between the track's inset
+    edges, so its centre runs from 5px to (width - 5px), not from 0 to width. A
+    plain 50% would leave the trail up to 5px away from the dot it is supposed
+    to be attached to, worst at the two ends. Correcting inside calc() means
+    100% is resolved at paint time, so this survives a resize with no
+    JavaScript listening for one.
+  */
   .player__seek::-webkit-slider-runnable-track {
     height: 2px;
-    background: var(--amber-ghost);
+    background: linear-gradient(
+        to right,
+        var(--amber-dim) 0 calc(var(--progress) * (100% - 10px) + 5px),
+        var(--amber-ghost) calc(var(--progress) * (100% - 10px) + 5px) 100%
+      )
+      no-repeat;
   }
 
+  /* Firefox has a real lower-fill element, so it needs none of the arithmetic
+     above: the engine already knows where the thumb is. */
   .player__seek::-moz-range-track {
     height: 2px;
     background: var(--amber-ghost);
+  }
+
+  .player__seek::-moz-range-progress {
+    height: 2px;
+    background: var(--amber-dim);
   }
 
   .player__seek::-webkit-slider-thumb {
@@ -625,8 +663,18 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
     border-radius: 0;
   }
 
+  /* Before anyone presses play there is no position to report, so the trail is
+     not drawn at all rather than drawn at zero. */
   .player__seek:disabled {
     cursor: default;
+  }
+
+  .player__seek:disabled::-webkit-slider-runnable-track {
+    background: var(--amber-ghost);
+  }
+
+  .player__seek:disabled::-moz-range-progress {
+    background: none;
   }
 
   .player__seek:disabled::-webkit-slider-thumb {

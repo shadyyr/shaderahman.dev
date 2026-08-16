@@ -44,19 +44,28 @@ const units = groupByOrg(entries, (entry) => entry.data);
     }
   </ul>
 
-  <section class="panel education" aria-labelledby="education-heading">
-    <h2 class="panel__title" id="education-heading">Education</h2>
-    <p class="education__school">
-      <a href={EDUCATION.url}>{EDUCATION.school}</a>
-    </p>
-    <p class="education__meta">
-      {EDUCATION.degree} · GPA {EDUCATION.gpa} ·{" "}
-      {formatRange(EDUCATION.start, EDUCATION.end)} · {EDUCATION.location}
-    </p>
-    <p class="education__label">Coursework</p>
-    <ul class="tags">
-      {EDUCATION.coursework.map((course) => <Tag name={course} />)}
-    </ul>
+  {/*
+    A standing section title over a panel, the same shape as "What's on my
+    playlist" and "Selected work" on the home page, rather than a label notched
+    into the panel's own border. Education is a section of this page, not an
+    aside inside it, and it now says so at the same size as the other two.
+  */}
+  <section class="education" aria-labelledby="education-heading">
+    <h2 class="section-title" id="education-heading">Education</h2>
+
+    <div class="panel">
+      <p class="education__school">
+        <a href={EDUCATION.url}>{EDUCATION.school}</a>
+      </p>
+      <p class="education__meta">
+        {EDUCATION.degree} · GPA {EDUCATION.gpa} ·{" "}
+        {formatRange(EDUCATION.start, EDUCATION.end)} · {EDUCATION.location}
+      </p>
+      <p class="education__label">Coursework</p>
+      <ul class="tags">
+        {EDUCATION.coursework.map((course) => <Tag name={course} />)}
+      </ul>
+    </div>
   </section>
 </OsLayout>
 
@@ -71,19 +80,19 @@ const units = groupByOrg(entries, (entry) => entry.data);
     font-weight: 600;
   }
 
-  .education__meta {
-    margin-top: var(--s1);
+  .education__meta,
+  .education__label {
     font-family: var(--font-display);
     font-size: var(--text-micro);
     letter-spacing: 0.08em;
     color: var(--amber-dim);
   }
 
+  .education__meta {
+    margin-top: var(--s1);
+  }
+
   .education__label {
     margin-top: var(--s4);
-    font-family: var(--font-display);
-    font-size: var(--text-micro);
-    letter-spacing: 0.08em;
-    color: var(--amber-dim);
   }
 </style>
