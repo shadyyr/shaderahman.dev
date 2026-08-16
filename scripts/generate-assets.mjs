@@ -259,7 +259,7 @@ await sharp(Buffer.from(og)).png().toFile(out("og.png"));
   The home page portrait, cropped and shrunk from the original camera file.
 
   The source lives in art/ rather than public/ because it is 5712x4284 and
-  4.4MB, and everything in public/ is copied verbatim into the build. That
+  4.2MB, and everything in public/ is copied verbatim into the build. That
   mistake has already been made once here, with a 2.4MB photograph shipping to
   production that no page referenced.
 

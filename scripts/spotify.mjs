@@ -228,7 +228,7 @@ async function main() {
 
     The page renders the first track from the file above at build time, and
     fetches this one only when somebody presses play. Most visitors never will,
-    and this way they never pay for it: measured, the full file is 68.1KB raw
+    and this way they never pay for it: measured, the full file is 106KB on disk
     and 15.8KB gzipped, and this trimmed one is 28.3KB and 11.6KB. Inlining
     either would have put it on every visit to the home page, which is 36.8KB.
 
