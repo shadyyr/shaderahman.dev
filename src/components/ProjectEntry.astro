@@ -1,6 +1,6 @@
 ---
 import { render, type CollectionEntry } from "astro:content";
-import { formatAward } from "../lib/format";
+import { emphasize, formatAward } from "../lib/format";
 import Tag from "./Tag.astro";
 
 interface Props {
@@ -27,7 +27,11 @@ const hasBody = !compact && entry.body != null && entry.body.trim().length > 0;
 
   {data.award && <p class="award">{formatAward(data.award)}</p>}
 
-  <p class="entry__summary">{data.summary}</p>
+  {/* Through emphasize, the same as an experience bullet: `**` around the
+      figure that carries the claim, and nothing else honoured. It escapes
+      first and applies the markers after, so a stray `<` in a summary renders
+      as a character rather than as markup. */}
+  <p class="entry__summary" set:html={emphasize(data.summary)} />
 
   {
     !compact && data.highlights.length > 0 && (
@@ -35,7 +39,7 @@ const hasBody = !compact && entry.body != null && entry.body.trim().length > 0;
         {data.highlights.map((highlight) => (
           <div class="highlight">
             <dt>{highlight.label}</dt>
-            <dd>{highlight.detail}</dd>
+            <dd set:html={emphasize(highlight.detail)} />
           </div>
         ))}
       </dl>

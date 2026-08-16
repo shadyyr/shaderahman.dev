@@ -17,8 +17,74 @@ interface Props {
 
 const { listed = 6 } = Astro.props;
 
-const first = playlist.tracks[0];
-const upNext = playlist.tracks.slice(1, 1 + listed);
+/*
+  The panel opens on a different song for every visitor, and the whole cost of
+  that is the blocks below.
+
+  Shuffling per visit needs track data on the client, and the full list is
+  35.5KB that this site deliberately does not spend on people who never press
+  play. So the build inlines a few short runs of tracks instead, and the
+  visitor picks a start inside one of them.
+
+  Runs, not single tracks, because playback continues in order from wherever it
+  starts: the queue under the deck has to show the tracks that really follow.
+  That is also why each run gives BLOCK - listed starts rather than BLOCK. The
+  last `listed` tracks of a run cannot open, because there would be nothing
+  truthful to put in the queue beneath them.
+
+  BLOCKS runs spread across the playlist rather than one long run, so the
+  opening song can come from anywhere in it and not just one neighbourhood.
+  Each run is placed at random inside its own slot, so the neighbourhoods move
+  on every deploy rather than being the same six forever.
+
+  These two numbers are the only knob. Widening a run is the cheap way to buy
+  opening songs and narrowing it is expensive, which is the opposite of the
+  obvious guess: every run spends `listed` tracks on a tail that cannot open,
+  so a run of 14 costs 1.75 records per opening song and a run of 20 costs
+  1.43. Adding runs, by contrast, costs full price. 6x20 is 84 opening songs
+  for the same bytes 8x14 spent on 64. Past about 20 the curve flattens and
+  you are just concentrating the starts.
+
+  Nothing here has to cover next or previous. Those are disabled until the
+  first press of play, and that press fetches the whole 224 track list, which
+  every later navigation runs off. This data exists only to paint the panel
+  before any of that happens.
+*/
+const BLOCKS = 6;
+const BLOCK = 20;
+
+const stride = Math.floor(playlist.tracks.length / BLOCKS);
+const compact = (track: (typeof playlist.tracks)[number]) => ({
+  i: track.id,
+  a: track.art.replace("https://i.scdn.co/image/", ""),
+  n: track.name,
+  r: track.artists.map((artist) => [artist.name, artist.id]),
+  d: track.durationMs,
+});
+
+/* `s` is where the run sits in the real playlist, which is what makes an
+   absolute index recoverable from a pick inside it. */
+const blocks =
+  stride >= BLOCK
+    ? Array.from({ length: BLOCKS }, (_, slot) => {
+        const at =
+          slot * stride + Math.floor(Math.random() * (stride - BLOCK + 1));
+        return { s: at, t: playlist.tracks.slice(at, at + BLOCK).map(compact) };
+      })
+    : [{ s: 0, t: playlist.tracks.slice(0, BLOCK).map(compact) }];
+
+/*
+  What renders server-side, and therefore what a visitor with JavaScript off
+  sees. Picked the same way the client picks, so that fallback is a real
+  opening song from a real run rather than always track one, and it moves every
+  deploy too.
+*/
+const openBlock = blocks[Math.floor(Math.random() * blocks.length)];
+const openOffset = Math.floor(Math.random() * (openBlock.t.length - listed));
+const openAt = openBlock.s + openOffset;
+
+const first = playlist.tracks[openAt];
+const upNext = playlist.tracks.slice(openAt + 1, openAt + 1 + listed);
 
 /*
   mm:ss. Durations here run from about ninety seconds to nine minutes, so the
@@ -36,6 +102,21 @@ const runtime = playlist.tracks.reduce((sum, t) => sum + t.durationMs, 0);
 const hours = Math.floor(runtime / 3_600_000);
 const minutes = Math.round((runtime % 3_600_000) / 60_000);
 ---
+
+{/*
+  The runs, as data rather than as generated code, and first in the component
+  on purpose: it has to be parsed before the cover below it, because the script
+  that rewrites the cover cannot run until this exists.
+
+  `<` is escaped because a track name containing "</script>" would otherwise
+  end this element early.
+*/}
+<script
+  type="application/json"
+  id="player-blocks"
+  is:inline
+  set:html={JSON.stringify({ l: listed, b: blocks }).replace(/</g, "\\u003c")}
+/>
 
 <section aria-labelledby="playlist-heading">
   <h2 class="section-title" id="playlist-heading">What's on my playlist</h2>
@@ -109,7 +190,7 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
           <span aria-hidden="true">&gt;&gt;|</span>
           <span class="visually-hidden">Next track</span>
         </button>
-        <p class="player__position"><span id="player-index">1</span> / {playlist.trackCount}</p>
+        <p class="player__position"><span id="player-index">{openAt + 1}</span> / {playlist.trackCount}</p>
       </div>
 
       {/*
@@ -137,6 +218,98 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
   </div>
 
   {/*
+    Picks the opening song, and has to beat the browser to the cover.
+
+    is:inline with no type="module", so it executes during parsing rather than
+    after it, and it sits directly under the deck rather than at the end of the
+    component. Both of those matter. The cover carries loading="lazy" and sits
+    696px to 750px down the home page against desktop folds of 800px and up, so
+    the browser starts fetching it on its own; a deferred script would repaint
+    it in full view about 100ms after load.
+
+    What actually happens, measured rather than assumed: the browser does begin
+    the server-rendered cover, and this rewrite aborts it. Resource timing
+    records that first entry with a 0ms duration and 0 bytes transferred, while
+    the shuffled cover is the only one that moves real bytes. So it is not that
+    the wrong cover is never requested, it is that it is cancelled before any
+    of it arrives, which is why nothing is ever painted twice.
+
+    Do not "fix" the duplicate entry in the timeline by deferring this script.
+    That trades a cancelled 0 byte request for a completed one plus a visible
+    swap.
+
+    The queue is handled by the second half, below the rows it rewrites, since
+    nothing down there races an image.
+  */}
+  <script is:inline>
+    (function () {
+      var source = document.getElementById("player-blocks");
+      var deck = document.getElementById("player-track");
+      if (!source || !deck) return;
+
+      var data = JSON.parse(source.textContent);
+      var blocks = data.b || [];
+      if (!blocks.length) return;
+
+      // A run first, then a start inside it. The tail of a run cannot open,
+      // because the queue below the deck would have nothing true to show.
+      var block = blocks[Math.floor(Math.random() * blocks.length)];
+      if (block.t.length <= data.l) return;
+      var offset = Math.floor(Math.random() * (block.t.length - data.l));
+
+      var track = block.t[offset];
+      var clock = function (ms) {
+        var t = Math.round(ms / 1000);
+        return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+      };
+
+      /* Astro scopes this component's CSS with a generated attribute. Any
+         element built here needs it or every scoped rule skips the element. */
+      var cid = null;
+      var sample = document.querySelector("#player-artist a");
+      if (sample) {
+        for (var i = 0; i < sample.attributes.length; i++) {
+          var attr = sample.attributes[i].name;
+          if (attr.indexOf("data-astro-cid-") === 0) cid = attr;
+        }
+      }
+
+      /* Names go in as text, never as markup: they arrive from an API. */
+      var artistsInto = function (host, pairs) {
+        host.replaceChildren();
+        pairs.forEach(function (pair, n) {
+          if (n > 0) host.append(", ");
+          var link = document.createElement("a");
+          if (cid) link.setAttribute(cid, "");
+          link.href = "https://open.spotify.com/artist/" + pair[1];
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = pair[0];
+          host.append(link);
+        });
+      };
+
+      document.getElementById("player-art").src =
+        "https://i.scdn.co/image/" + track.a;
+      deck.textContent = track.n;
+      artistsInto(document.getElementById("player-artist"), track.r);
+      document.getElementById("player-duration").textContent = clock(track.d);
+      document.getElementById("player-open").href =
+        "https://open.spotify.com/track/" + track.i;
+      document.getElementById("player-index").textContent =
+        String(block.s + offset + 1);
+
+      var seek = document.getElementById("player-seek");
+      seek.max = String(Math.round(track.d / 1000));
+      seek.value = "0";
+
+      /* Handed to the second half, which cannot re-run the pick without
+         choosing a different song than the one now on screen. */
+      window.__playerOpening = { block: block, offset: offset, into: artistsInto, clock: clock };
+    })();
+  </script>
+
+  {/*
     Spotify's player. It has to stay visible: their terms require the embed and
     its branding be shown and unaltered, so this is not a widget being hidden
     behind a nicer one. It is the thing actually playing, and the deck above is
@@ -152,7 +325,10 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
   */}
   <div class="player__source" id="player-source" hidden>
     <p class="player__source-label">playing via</p>
-    <div class="player__embed" id="player-embed"></div>
+    {/* Where in the full playlist the panel is currently sitting. Written by
+        the shuffle below, read by the controller, so the two cannot disagree
+        about which track "play" means. */}
+    <div class="player__embed" id="player-embed" data-start={openAt}></div>
   </div>
 
   <p class="player__queue-label">Up next</p>
@@ -178,6 +354,36 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
       ))
     }
   </ul>
+
+    {/*
+      The other half of the shuffle, below the rows it rewrites and below the
+      embed whose data-start it sets.
+
+      It rewrites the rows the server already rendered instead of rebuilding
+      them. Rebuilding would mean re-stamping Astro's scoped-style attribute
+      onto every new node, which is the bug documented in the controller below;
+      updating text in place cannot hit it.
+    */}
+    <script is:inline>
+      (function () {
+        var open = window.__playerOpening;
+        if (!open) return;
+        delete window.__playerOpening;
+
+        var at = open.block.s + open.offset;
+        var embed = document.getElementById("player-embed");
+        if (embed) embed.setAttribute("data-start", String(at));
+
+        var rows = document.querySelectorAll("#player-queue .player__row");
+        for (var row = 0; row < rows.length; row++) {
+          var next = open.block.t[open.offset + 1 + row];
+          if (!next) break;
+          rows[row].querySelector(".player__row-play").textContent = next.n;
+          open.into(rows[row].querySelector(".player__row-artist"), next.r);
+          rows[row].querySelector(".player__row-time").textContent = open.clock(next.d);
+        }
+      })();
+    </script>
 
     <p class="player__foot">{playlist.trackCount} tracks, {hours}h {minutes}m</p>
   </div>
@@ -255,6 +461,14 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
 
     let tracks: Track[] = [];
     let index = 0;
+
+    /*
+      Where the shuffle above left the panel, as an index into the full
+      playlist rather than into the inlined block. Everything the visitor can
+      see is already showing this track, so "play" has to mean this one and the
+      queue's offsets have to be measured from it.
+    */
+    const startIndex = Number(embed.dataset.start) || 0;
     let controller: any = null;
     let paused = true;
     let scrubbing = false;
@@ -413,7 +627,7 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
           fetch("/playlist.json").then((r) => r.json() as Promise<Track[]>),
         ]);
         tracks = list;
-        index = from % tracks.length;
+        index = (startIndex + from) % tracks.length;
 
         source.hidden = false;
         await new Promise<void>((resolve) => {

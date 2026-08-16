@@ -6,8 +6,8 @@ period: "July 2026"
 date: "2026-07"
 summary: >-
   A birthday present for my best friend. A mobile-first soundboard styled after
-  a Stream Deck: sixteen tactile keys in a 4×4 grid, one sound each, no build
-  step and no dependencies.
+  a Stream Deck with **sixteen tactile keys** in a 4×4 grid, one sound each, no
+  build step and no dependencies.
 tech: ["JavaScript", "HTML", "CSS", "Web Audio API", "PWA"]
 highlights:
   - label: "No framework, deliberately"

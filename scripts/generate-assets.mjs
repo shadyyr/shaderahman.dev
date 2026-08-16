@@ -27,17 +27,20 @@ const FAINT = "#5c3f11";
 /* ------------------------------------------------------------------ icons - */
 
 /*
-  Everything below derives from logo.svg, the vectorised S / R lockup. The
-  favicon, the touch icon, and the two cursors all use the pointer glyph cut
-  out of it; the og card uses the whole lockup. One drawing, one extraction,
-  nothing drawn twice.
+  Everything below derives from logo.svg, the vectorised S / R lockup, but only
+  the pointer glyph cut out of it is ever drawn: the favicon, the touch icon,
+  the two cursors and now the og card all use that one glyph.
+
+  The S / R lockup itself is no longer rendered anywhere. It appeared on the og
+  card alone, which meant the share card was the only surface carrying a mark
+  the site never showed you. The pointer is the thing people actually meet, as
+  the cursor on every page, so the card leads with that instead.
+
+  logo.svg stays the source: the glyph is still cut out of it, and it is the
+  only drawing of either mark that exists.
 */
 const logoSvg = await readFile(new URL("logo.svg", OUT), "utf8");
-/** Read from the art itself, so redrawing the logo cannot desync these. */
-const [, LOGO_CELLS_W] = logoSvg
-  .match(/viewBox="0 0 ([\d.]+) ([\d.]+)"/)
-  .map(Number);
-/** The bare rects, so the lockup can be placed inside a larger SVG. */
+/** The bare rects, which is where the pointer glyph is cut from below. */
 const logoInner = logoSvg
   .replace(/^[\s\S]*?<svg[^>]*>/, "")
   .replace(/<\/svg>\s*$/, "");
@@ -177,6 +180,61 @@ const DOMAIN = "shaderahman.dev";
 // second so it survives a font substitution without falling apart.
 const MONO = "Courier New, Courier, monospace";
 
+/*
+  THE MARK SITS BESIDE THE NAME, NOT ABOVE IT.
+
+  The S / R lockup it replaced was 170 wide by 63 tall and stood on its own
+  line. The pointer is 7 by 11 cells, so at that same height it is only 40 wide
+  and reads as a stray icon in a very large frame. Giving a narrow glyph
+  presence means giving it height, and height is the one thing the stacked
+  position cannot spare: the name has to have it. Beside the name it costs
+  width instead, which this card has plenty of.
+
+  THE MARK IS EXACTLY AS TALL AS THE TWO LINES IT STANDS BESIDE. Its top is
+  the name's cap line and its bottom is the field line's descenders, so the
+  lockup has one top edge and one bottom edge rather than a mark floating at
+  its own size next to some text. That is what makes it read as their mark and
+  not as a third element.
+
+  Which means the height is not a number to taste, it is measured off the type,
+  and the two offsets below are the measurement. Courier's cap height at 92px
+  puts the name's ink 59 above its baseline; "Computer Engineering" has a p and
+  a g, so the field's ink runs 6 below its own. 286 - 59 to 328 + 6 is 227 to
+  334, and the mark is those 107.
+
+  Change either font size or either baseline and these two offsets are wrong.
+  Re-measure the PNG, do not re-derive them from the font's metrics.
+
+  It was drawn at 213 first, which fills the frame but bullies the name, and
+  the name is what should carry the card. A mark that competes with the name is
+  the wrong mark, which is the same note the old lockup failed at 240 wide.
+
+  The pair sits centred between the title bar and the divider, which is why the
+  baselines are 286 and 328: with nothing stacked above the name there is
+  nothing to pin the block to the top margin, and pinning it would leave all
+  the slack in one gap and bottom the card out empty.
+
+  Also tried, and turned down: centring the name and field in the window and
+  putting the pointer at the end of "Rahman" as though clicking it. It reads
+  well as an idea and it did not look right on the card, so the mark stays
+  where a mark goes.
+
+  MARK_W is derived rather than typed, so redrawing the glyph cannot leave the
+  card stretching it.
+*/
+const NAME_BASELINE = 286;
+const FIELD_BASELINE = 328;
+/** Ink above the name's baseline, and below the field's. Both measured. */
+const CAP_RISE = 59;
+const DESCENDER = 6;
+
+const MARK_X = 129;
+const MARK_Y = NAME_BASELINE - CAP_RISE;
+const MARK_H = FIELD_BASELINE + DESCENDER - MARK_Y;
+const MARK_W = (MARK_H * CURSOR_W) / CURSOR_H;
+/** Ink left of the text column. 44 is the same gap the rhythm uses elsewhere. */
+const COLUMN = MARK_X + MARK_W + 44;
+
 const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="${BG}"/>
 
@@ -195,12 +253,14 @@ const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" vi
     sides, and every element flush to it. Measured, not assumed.
 
     Courier carries a left side bearing that scales with font size, so a text
-    anchored at 129 does not start its first stroke there, and the error
-    differs per line. To land a visual edge on 129 the name needs an anchor of
-    124 at 92px, and the field line and nav row need 127 at 34px and 28px. The
-    right edge is the same problem mirrored, so the domain ends at 1072 to put
-    its last stroke on 1070. The logo and the divider are bare geometry with no
-    bearing at all, so they sit at a true 129 and 1070.
+    anchored at a number does not start its first stroke there, and the error
+    differs per line. The nav row needs 127 to land ink on 129 at 28px, and in
+    the text column the name needs COLUMN - 5 at 92px against the field line's
+    COLUMN - 2 at 34px: one intended edge, two different anchors, because the
+    bearing at 92px is nearly three times the bearing at 34px. The right edge
+    is the same problem mirrored, so the domain ends at 1072 to put its last
+    stroke on 1070. The mark and the divider are bare geometry with no bearing
+    at all, so they sit at a true 129 and 1070.
 
     Change a font size here and the bearing changes with it, so re-measure
     rather than assuming an anchor still holds.
@@ -212,28 +272,27 @@ const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" vi
     barely half the interior and the card read as a small block in a large
     frame.
 
-    The lockup stays at 170. It was tried at 240 and read as too heavy against
-    the name, which is the element that should carry the card. A mark that
-    competes with the name for attention is the wrong mark.
+    The mark's height, which is measured off the type rather than chosen, is
+    argued above the MARK_H constant rather than here.
 
-    The interior runs 124 to 556, and the air in it is placed deliberately:
+    The interior runs 124 to 558, and the air in it is placed deliberately:
 
-      56  above the logo          equal to the side margins
-      44  logo to name
-      19  name to field           tight, the field line is a subtitle
-      44  field to divider
+      103 title bar to the lockup           the slack, split evenly
+      44  mark to the text column           horizontal, not vertical
+      42  name baseline to field baseline   tight, the field is a subtitle
+      101 lockup to divider                 the other half of the slack
       42  divider to nav
-      56  below the nav           equal to the side margins
+      56  below the nav                     equal to the side margins
 
-    Growing type without opening the gaps in step is what would overcrowd it,
-    so both moved together.
+    The mark and the text share a top edge and a bottom edge, so the lockup
+    reads as one object rather than two things that happen to be adjacent.
   -->
-  <g transform="translate(129 180) scale(${170 / LOGO_CELLS_W})">${logoInner}</g>
+  <g transform="translate(${MARK_X} ${MARK_Y}) scale(${MARK_H / CURSOR_H})">${pointer()}</g>
 
-  <text x="124" y="344" font-family="${MONO}" font-size="92" font-weight="bold" fill="${AMBER_HI}">${escape(NAME)}</text>
+  <text x="${COLUMN - 5}" y="${NAME_BASELINE}" font-family="${MONO}" font-size="92" font-weight="bold" fill="${AMBER_HI}">${escape(NAME)}</text>
   <!-- Authored in the casing it renders in. The old .toUpperCase() here was
        the same lossy transform the CSS rule bans everywhere else. -->
-  <text x="127" y="386" font-family="${MONO}" font-size="34" fill="${AMBER_DIM}" letter-spacing="4">${FIELD}</text>
+  <text x="${COLUMN - 2}" y="${FIELD_BASELINE}" font-family="${MONO}" font-size="34" fill="${AMBER_DIM}" letter-spacing="4">${FIELD}</text>
 
   <!-- Geometry, so it takes the optical margin the logo uses, not the text
        anchor. 129 in and 129 out, against a window that spans 72 to 1128. -->
