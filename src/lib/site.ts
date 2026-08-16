@@ -44,7 +44,10 @@ export const SITE = {
   /** Shown in the title bar and the status line. Cosmetic. */
   system: {
     label: "SHADE.OS",
-    version: "1.0",
+    /* 1.1 is the home page remodel: the playlist player where "Now" was, and
+       the portrait beside the intro. Bump this when the site changes shape,
+       not on content edits. */
+    version: "1.1",
   },
 } as const;
 
