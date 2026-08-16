@@ -83,6 +83,23 @@ import { ROUTES } from "../lib/site";
     gap: var(--s3);
   }
 
+  /*
+    The paths form a column instead of trailing each name at whatever width it
+    happens to be. Four rows of the same shape starting at four different x
+    positions, a 54px spread at 1280, read as four unrelated lines rather than
+    a table of the routes.
+
+    11ch, in the row's own 15px body type, so it holds the longest name
+    ("Experience", 10 characters) with a space to spare and rescales with the
+    type rather than pinning to a magic pixel width. It is a floor, not a fixed
+    width: nothing here can outgrow it, but a longer route name would push its
+    own row wider rather than being clipped.
+  */
+  .routes li > a {
+    flex: 0 0 auto;
+    min-width: 11ch;
+  }
+
   .routes__path {
     font-family: var(--font-display);
     font-size: var(--text-micro);
