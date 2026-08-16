@@ -518,6 +518,21 @@ a:active {
   color: var(--amber-hi);
 }
 
+/*
+  The other kind of section heading: a plain 22px h2 standing above its content
+  rather than notched into a panel's border. Used by "Selected work" and by the
+  playlist, which is why it lives here instead of in one page's scoped styles.
+
+  The margin is the whole rule, and it is not optional. The reset zeroes every
+  margin and nothing ever put one back for a bare h2, so the largest heading on
+  the site shipped flush against the card beneath it. A notched .panel__title
+  never showed that, because it takes its space from its panel's padding, which
+  is roughly 18px; --s5 matches it at this larger size.
+*/
+.section-title {
+  margin-bottom: var(--s5);
+}
+
 /* ------------------------------------------------------------- typography - */
 
 h1,

@@ -7,6 +7,7 @@
  */
 
 import { writeFile, readFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
@@ -251,6 +252,52 @@ const og = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" vi
 </svg>`;
 
 await sharp(Buffer.from(og)).png().toFile(out("og.png"));
+
+/* ----------------------------------------------------------------- photo - */
+
+/*
+  The home page portrait, cropped and shrunk from the original camera file.
+
+  The source lives in art/ rather than public/ because it is 5712x4284 and
+  4.4MB, and everything in public/ is copied verbatim into the build. That
+  mistake has already been made once here, with a 2.4MB photograph shipping to
+  production that no page referenced.
+
+  Cropped 4:5 around the subject, who sits between about 0.31 and 0.80 across
+  the frame, then resized to twice the width the layout gives it so it still
+  resolves on a 2x screen.
+
+  PHOTO_TOP is where the crop starts, and it is the number to move if the
+  framing needs changing. His hair reaches y=827 in the original, so cropping
+  from the top of the frame left 19% of the picture as empty sky and made him
+  small in a box whose height is set by the paragraphs beside it. 560 leaves
+  267px of headroom, 7.2% of the crop, which is air above his head rather than
+  a gap. 700 was tried and sits too close to the top of the frame.
+*/
+const PHOTO_SOURCE = new URL("../art/IMG_1474.jpeg", import.meta.url);
+const PHOTO_TOP = 560;
+
+if (existsSync(PHOTO_SOURCE)) {
+  const { width, height } = await sharp(fileURLToPath(PHOTO_SOURCE)).metadata();
+  const cropHeight = height - PHOTO_TOP;
+  const cropWidth = Math.round(cropHeight * 0.8);
+
+  const photo = await sharp(fileURLToPath(PHOTO_SOURCE))
+    .extract({
+      left: Math.round(width * 0.5556 - cropWidth / 2),
+      top: PHOTO_TOP,
+      width: cropWidth,
+      height: cropHeight,
+    })
+    .resize(768, 960)
+    .webp({ quality: 82 })
+    .toBuffer();
+
+  await writeFile(out("portrait.webp"), photo);
+  console.log(`portrait.webp 768x960, ${(photo.length / 1024).toFixed(0)}KB`);
+} else {
+  console.log("no art/IMG_1474.jpeg, skipping the portrait");
+}
 
 console.log(
   "wrote favicon.svg, favicon.ico, apple-touch-icon.png, cursor-default.png, cursor-pointer.png, og.png",

@@ -4,16 +4,14 @@ import OsLayout from "../layouts/OsLayout.astro";
 import PageHead from "../components/PageHead.astro";
 import ProjectEntry from "../components/ProjectEntry.astro";
 import ExternalKey from "../components/ExternalKey.astro";
+import PlaylistPanel from "../components/PlaylistPanel.astro";
 import { SITE } from "../lib/site";
 import { findResume } from "../lib/resume";
-import { formatRange, byRecency } from "../lib/format";
+import { byRecency } from "../lib/format";
 
 const experience = (await getCollection("experience"))
   .filter((entry) => !entry.data.draft)
   .sort((a, b) => byRecency(a.data, b.data));
-
-// Several roles run concurrently, so "Now" is a list rather than one entry.
-const current = experience.filter((entry) => !entry.data.end);
 
 const featured = (await getCollection("projects"))
   .filter((entry) => !entry.data.draft && entry.data.featured)
@@ -37,22 +35,47 @@ const buildDate = new Date().toISOString().slice(0, 10);
   <div class="stack--loose stack">
     <section aria-labelledby="intro-heading" class="intro">
       <h2 class="visually-hidden" id="intro-heading">Introduction</h2>
-      <p>
-        I'm a computer engineering student at UCF. Right now, I'm a solutions
-        engineer intern at PeakActivity and president of the Bengali Student
-        Association. I'm also doing graphic design for Knight Hacks, mostly
-        Instagram posts and merchandise, plus this year's landing page. Most of
-        what I build sits between full-stack web work and whichever API I've
-        gotten curious about that month.
-      </p>
-      <p>
-        I started out as a CS major and switched after my first semester. Now
-        don't get me wrong, I still love CS and writing code, but I wanted to
-        know what's underneath the code, what it actually does, and how it does
-        it. Computer engineering is where that question gets answered. It's
-        definitely a struggle to learn the electrical portion of it, but it's
-        definitely worth it.
-      </p>
+
+      <div class="intro__text">
+        <p>
+          I'm a computer engineering student at UCF. Right now, I'm a solutions
+          engineer intern at PeakActivity and president of the Bengali Student
+          Association. I'm also doing graphic design for Knight Hacks, mostly
+          Instagram posts and merchandise, plus this year's landing page. Most
+          of what I build sits between full-stack web work and whichever API
+          I've gotten curious about that month.
+        </p>
+        <p>
+          I started out as a CS major and switched after my first semester. Now
+          don't get me wrong, I still love CS and writing code, but I wanted to
+          know what's underneath the code, what it actually does, and how it
+          does it. Computer engineering is where that question gets answered.
+          It's definitely a struggle to learn the electrical portion of it, but
+          it's definitely worth it.
+        </p>
+      </div>
+
+      {/*
+        Unfiltered, exactly like the album covers in the player below: a border,
+        object-fit, and nothing else. The site's own CRT overlay passes over it
+        and does the rest.
+
+        It was an amber duotone for a while, on the reasoning that a colour
+        photograph would fight the palette at this size where a 128px cover does
+        not. He looked at it on the page and disagreed, which settles it: the
+        overlay was reading as orange paint over the photograph rather than as
+        part of the interface. Do not put it back without asking.
+      */}
+      <div class="intro__photo">
+        <img
+          src="/portrait.webp"
+          width="768"
+          height="960"
+          alt="Shade Rahman, smiling, by the water at sunset"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
 
       <div class="keys">
         <ExternalKey href={SITE.socials.github} label="GitHub" hint="G" />
@@ -72,47 +95,12 @@ const buildDate = new Date().toISOString().slice(0, 10);
       </div>
     </section>
 
-    {
-      current.length > 0 && (
-        <section class="panel" aria-labelledby="now-heading">
-          <h2 class="panel__title" id="now-heading">
-            Now
-          </h2>
-          <ul class="now">
-            {current.map((entry) => (
-              <li class="now__item">
-                <p class="now__role">
-                  {entry.data.role} at{" "}
-                  {entry.data.companyUrl ? (
-                    <a
-                      href={entry.data.companyUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {entry.data.company}
-                    </a>
-                  ) : (
-                    entry.data.company
-                  )}
-                </p>
-                <p class="now__meta">
-                  since {formatRange(entry.data.start, entry.data.end).split(" – ")[0]} ·{" "}
-                  {entry.data.location}
-                </p>
-              </li>
-            ))}
-          </ul>
-          <p class="now__more">
-            <a href="/experience">Full work history →</a>
-          </p>
-        </section>
-      )
-    }
+    <PlaylistPanel />
 
     {
       featured.length > 0 && (
         <section aria-labelledby="featured-heading">
-          <h2 class="featured__title" id="featured-heading">Selected work</h2>
+          <h2 class="section-title" id="featured-heading">Selected work</h2>
           <ul class="entries">
             {featured.map((entry) => (
               <ProjectEntry entry={entry} compact level={3} />
@@ -129,10 +117,11 @@ const buildDate = new Date().toISOString().slice(0, 10);
       <h2 class="panel__title" id="colophon-heading">Colophon</h2>
       <p>
         Static HTML built with <a href="https://astro.build">Astro</a> and
-        hand-written CSS. No framework runtime, no analytics, no cookies,
-        no trackers. The only JavaScript on the page is the command palette,
-        the keyboard shortcuts, and the clock in the status bar. Everything
-        here works with all three switched off.
+        hand-written CSS. No framework runtime, no analytics, no trackers of
+        mine. The player is the one exception: press play and it loads
+        Spotify's embed, which is theirs and sets its own cookies. Leave it
+        alone and nothing third-party is requested except the album art.
+        Everything else here works with JavaScript switched off.
       </p>
       <p>
         Display type is <a href="https://departuremono.com">Departure Mono</a> by
@@ -159,20 +148,106 @@ const buildDate = new Date().toISOString().slice(0, 10);
   }
 
   /*
-    The only section heading on the site that is not a notched panel title.
-    Bare h2 had nothing under it, because the reset zeroes every margin and no
-    rule ever put one back, so "Selected work" sat flush on the card below it.
-    Panel titles get about 18px from their panel's padding; this matches that
-    at the larger heading size.
+    The two paragraphs on the left, the photograph on the right, the buttons on
+    their own row underneath. It wraps
+    rather than switching on a breakpoint, because the width available here does
+    not follow the viewport: the sidebar arrives at 56rem and takes 240px with
+    it, so the row measures 846px at a 896px viewport and 607px at 897px, wider
+    on the smaller screen. No single min-width describes that, and a flex line
+    breaks on the space it actually has.
+
+    DOM order is prose, photograph, buttons, with no `order` anywhere, so what a
+    screen reader reads and what the eye follows cannot come apart.
   */
-  .featured__title {
-    margin-bottom: var(--s5);
+  .intro {
+    display: flex;
+    flex-wrap: wrap;
+    /* stretch, not flex-start: it is what makes the picture end exactly where
+       the prose does, rather than running on past it. */
+    align-items: stretch;
+    gap: var(--s6) var(--s8);
+    /*
+      A query container, because the rule below has to know whether the row
+      wrapped and no media query can tell it. The width here does not track the
+      viewport: the sidebar arrives at 56rem, so this row is 846px at a 896px
+      viewport and 607px at 897px. Asking the row how wide it actually is
+      answers the question the viewport cannot.
+    */
+    container-type: inline-size;
   }
 
-  .intro {
+  /* 28rem is about 44 characters to the line at 17px, as narrow as the prose is
+     worth reading beside a picture, so it is also where the row stacks. */
+  .intro__text {
+    flex: 1 1 28rem;
     display: flex;
     flex-direction: column;
     gap: var(--s4);
+  }
+
+  /*
+    Beside the two paragraphs and bounded by them. It flanked the buttons too at
+    first and stood 480px against their 451, so it finished below the prose and
+    the whole block looked like it had slipped down a few pixels. The buttons
+    are back on their own full-width row and the picture takes its height from
+    the paragraphs.
+
+    A share of the row rather than a fixed width, capped at 22rem so it cannot
+    start dictating the page.
+  */
+  .intro__photo {
+    position: relative;
+    flex: 0 1 20rem;
+    max-width: 22rem;
+    min-width: min(14rem, 100%);
+    margin-inline: auto;
+    border: 1px solid var(--amber-ghost);
+    background: var(--bg-inset);
+    line-height: 0;
+    overflow: hidden;
+  }
+
+  /*
+    Stacked, the picture carries its own 4:5 shape, because nothing else is on
+    the line to give it a height.
+  */
+  .intro__photo {
+    aspect-ratio: 4 / 5;
+  }
+
+  .intro__photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 35%;
+  }
+
+  /*
+    Side by side, the prose sets the height and the picture follows.
+
+    This is the whole point of the container query, and getting it wrong was a
+    real bug rather than a nicety. With an aspect-ratio the picture has an
+    intrinsic 400px height, and a flex line is as tall as its tallest item, so
+    the picture was setting the row and the prose was being stretched to match
+    it. Measured at 1440: the text box was 400px tall around 342px of prose,
+    leaving 57px of dead space inside it and pushing the buttons 81px clear of
+    the last line. At 1280 the prose happened to be 397px and it looked fine,
+    which is exactly how this survived a measurement pass.
+
+    Dropping the ratio and taking the image out of flow leaves the picture with
+    no height of its own, so the line is sized by the prose alone and stretch
+    hands that height back to the picture. 50rem is where the row stops
+    wrapping: 28rem of prose plus 20rem of picture plus the 2rem gap.
+  */
+  @container (min-width: 50rem) {
+    .intro__photo {
+      aspect-ratio: auto;
+    }
+
+    .intro__photo img {
+      position: absolute;
+      inset: 0;
+    }
   }
 
   .intro p {
@@ -180,41 +255,13 @@ const buildDate = new Date().toISOString().slice(0, 10);
     color: var(--amber);
   }
 
+  /* Its own full-width row beneath both columns, which is where it was before
+     the picture arrived and where it belongs: the buttons are about the page,
+     not about the paragraph they happen to sit next to. */
   .keys {
-    margin-top: var(--s2);
+    flex-basis: 100%;
   }
 
-  .now {
-    list-style: none;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: var(--s4);
-  }
-
-  .now__item {
-    padding-left: var(--s4);
-    border-left: 1px solid var(--amber-ghost);
-  }
-
-  .now__role {
-    font-size: var(--text-lg);
-    color: var(--amber-max);
-  }
-
-  .now__meta {
-    font-family: var(--font-display);
-    font-size: var(--text-micro);
-    letter-spacing: 0.08em;
-    color: var(--amber-dim);
-    margin-top: var(--s1);
-  }
-
-  .now__summary {
-    margin-top: var(--s3);
-  }
-
-  .now__more,
   .more {
     margin-top: var(--s4);
     font-size: var(--text-sm);
