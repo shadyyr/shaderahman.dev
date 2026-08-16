@@ -6,12 +6,12 @@ period: "Sep – Dec 2025"
 date: "2025-12"
 summary: >-
   A team build of a RISC-V CPU system-on-chip that runs video games on an FPGA,
-  done through IEEE at UCF. Hardware is the half of computer engineering a
+  done through IEEE at UCF. Hardware is the half of computer engineering that a
   software portfolio usually leaves out.
 tech: ["Verilog", "FPGA", "RISC-V", "RTL Design"]
 highlights:
   - label: "The design"
-    detail: "A 5-stage pipeline with VM/0 fetch, built as a team through the university's IEEE chapter."
+    detail: "A **5-stage pipeline** with VM/0 fetch, built as a team through the university's IEEE chapter."
   - label: "My part"
     detail: "Coding, debugging, synthesis, and implementing hardware modules: the ordinary work of getting RTL to behave on real hardware rather than only in simulation."
 links:
