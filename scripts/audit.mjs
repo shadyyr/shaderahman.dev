@@ -141,10 +141,48 @@ for (const file of pages) {
   else if (noAlt.length) fail(`${noAlt.length} of ${imgs.length} images lack alt`);
   else pass(`${imgs.length} images all have alt`);
 
+  /*
+    Anything carrying role="img" must carry an aria-label with it. The home page
+    renders a photograph as several thousand punctuation characters inside a
+    <pre>, and that pair of attributes is the entire difference between a screen
+    reader announcing one described image and it reading the punctuation out
+    loud, glyph by glyph, for as long as the listener lets it.
+
+    Losing the label breaks nothing a browser can show you: the art still draws,
+    the page still passes every other check here, and the failure only exists
+    for the people who cannot see the art in the first place. That is precisely
+    the class of defect this file exists to catch.
+
+    The value has to be non-empty, not merely present. role="img" makes the
+    element a leaf in the accessibility tree, so an aria-label="" hides the
+    art's several thousand characters and puts nothing in their place: the
+    listener gets an unnamed image, which is the same loss in a shape that
+    looks correct in the markup.
+  */
+  const roleImgs = [...html.matchAll(/<[a-z][^>]*\brole=["']img["'][^>]*>/gi)];
+  const unlabelled = roleImgs.filter((m) => !/\saria-label=["']\s*[^"'\s]/i.test(m[0]));
+  if (roleImgs.length === 0) pass('no role="img" on page');
+  else if (unlabelled.length)
+    fail(`${unlabelled.length} of ${roleImgs.length} role="img" elements lack aria-label`);
+  else pass(`${roleImgs.length} role="img" element(s) labelled`);
+
   // dead links
   const dead = [...html.matchAll(/href=["']#["']/gi)].length;
   if (dead) fail(`${dead} placeholder href="#" links`);
   else pass("no dead links");
+
+  /*
+    Astro copies template HTML comments straight into the shipped page, and
+    the comments in this repo narrate decisions for whoever edits next,
+    sometimes at paragraph length. View-source on a page annotated with its
+    own reasoning is as loud a machine-made tell as a leaked agent config
+    file, which the build already refuses to ship. Template comments belong
+    in the expression form, which the compiler drops; this existed unnoticed
+    because nothing looked until a removed sentence survived in a comment.
+  */
+  const shippedComments = (html.match(/<!--/g) ?? []).length;
+  if (shippedComments) fail(`${shippedComments} HTML comment(s) shipped in the page`);
+  else pass("no HTML comments shipped");
 
   // leftovers
   if (/lorem ipsum/i.test(html)) fail("lorem ipsum in output");
