@@ -45,7 +45,7 @@ const graph = buildGraph({ path, title: fullTitle, description, isHome, crumbs }
 <meta name="author" content={SITE.name} />
 {noindex && <meta name="robots" content="noindex, follow" />}
 
-<!-- Open Graph. Absolute URLs only; relative paths silently fail to unfurl. -->
+{/* Open Graph. Absolute URLs only; relative paths silently fail to unfurl. */}
 <meta property="og:type" content={isHome ? "profile" : "website"} />
 <meta property="og:url" content={canonical} />
 <meta property="og:title" content={fullTitle} />
@@ -65,8 +65,8 @@ const graph = buildGraph({ path, title: fullTitle, description, isHome, crumbs }
 <meta name="twitter:description" content={description} />
 <meta name="twitter:image" content={ogImage} />
 
-<!-- Favicons: the 2026 short list. SVG for everything modern, ICO for the
-     crawlers that request it blind, one PNG for iOS. -->
+{/* Favicons: the 2026 short list. SVG for everything modern, ICO for the
+     crawlers that request it blind, one PNG for iOS. */}
 <link rel="icon" href="/favicon.ico" sizes="32x32" />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -75,7 +75,7 @@ const graph = buildGraph({ path, title: fullTitle, description, isHome, crumbs }
 <link rel="sitemap" href="/sitemap-index.xml" />
 <link rel="me" href={SITE.socials.github} />
 
-<!-- The two faces needed for first paint. The 600 weight loads on demand. -->
+{/* The two faces needed for first paint. The 600 weight loads on demand. */}
 <link
   rel="preload"
   href="/fonts/DepartureMono-Regular.woff2"
