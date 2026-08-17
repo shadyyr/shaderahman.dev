@@ -195,7 +195,8 @@ a:active {
     cursor: url("/cursor-default.png") 1 1, default;
   }
 
-  a {
+  a,
+  #player-queue .player__row-play {
     cursor: url("/cursor-pointer.png") 1 1, pointer;
   }
 }

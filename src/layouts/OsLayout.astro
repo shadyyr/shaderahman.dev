@@ -1,7 +1,9 @@
 ---
+import { ClientRouter } from "astro:transitions";
 import BaseHead from "../components/BaseHead.astro";
 import Sidebar from "../components/Sidebar.astro";
 import CommandPalette from "../components/CommandPalette.astro";
+import PlayerDock from "../components/PlayerDock.astro";
 import { SITE, ROUTES } from "../lib/site";
 import "../styles/global.css";
 
@@ -38,6 +40,19 @@ const windowPath = route ? `${SITE.origin.replace(/^https?:\/\//, "")}${path}` :
       crumbs={crumbs}
       noindex={noindex}
     />
+    {/*
+      Swaps pages inside one document instead of loading a new one, which is
+      the only reason the player can keep playing across a navigation: the
+      iframe is never torn down. See PlayerDock.
+
+      Links still work with JavaScript off. They are ordinary anchors and this
+      only intercepts them when it is running, so the no-JS story is unchanged.
+
+      The cost is that scripts no longer re-run per page. Anything that touches
+      the DOM has to rebind on astro:page-load, and the three that do are the
+      clock below, the command palette, and the player's panel.
+    */}
+    <ClientRouter />
   </head>
   <body>
     <a class="skiplink" href="#main">Skip to content</a>
@@ -72,6 +87,7 @@ const windowPath = route ? `${SITE.origin.replace(/^https?:\/\//, "")}${path}` :
     <div class="crt-overlay" aria-hidden="true"></div>
 
     <CommandPalette />
+    <PlayerDock />
 
     <style>
       /* Keyboard hints are a promise. They stay hidden until the script that
@@ -86,21 +102,34 @@ const windowPath = route ? `${SITE.origin.replace(/^https?:\/\//, "")}${path}` :
     </style>
 
     <script>
-      // Marks that JS is alive, which is what un-hides the keyboard hints.
+      /*
+        The clock, and the one place the client router changes how this has to
+        be written.
+
+        This module executes once for the whole visit, not once per page, so
+        two things follow. The interval must be started once, or every
+        navigation would stack another one on top and the clock would tick
+        several times a second. And the element it writes to is replaced on
+        every navigation, so a reference captured here would be pointing at a
+        detached node after the first click, and the clock would silently stop.
+
+        So: one interval, and the element is looked up fresh on each tick.
+      */
       document.documentElement.setAttribute("data-js", "");
 
-      const clock = document.getElementById("clock");
-      if (clock) {
-        const tick = () => {
-          const now = new Date();
-          clock.textContent = now.toLocaleTimeString("en-US", {
-            hour12: false,
-          });
-          clock.setAttribute("datetime", now.toISOString());
-        };
-        tick();
-        setInterval(tick, 1000);
-      }
+      const tick = () => {
+        const clock = document.getElementById("clock");
+        if (!clock) return;
+        const now = new Date();
+        clock.textContent = now.toLocaleTimeString("en-US", { hour12: false });
+        clock.setAttribute("datetime", now.toISOString());
+      };
+
+      tick();
+      setInterval(tick, 1000);
+      /* The swap lands a fresh, empty clock element; fill it without waiting up
+         to a second for the next tick. */
+      document.addEventListener("astro:page-load", tick);
     </script>
   </body>
 </html>

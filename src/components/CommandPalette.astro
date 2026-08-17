@@ -45,7 +45,20 @@ const commands: Command[] = [
 ];
 ---
 
-<dialog class="palette" id="palette" aria-label="Commands">
+{/*
+  Persisted across navigations, which is what keeps the script below correct.
+
+  That script runs once for the whole visit and captures the dialog, the input
+  and the list of items. Under the client router the layout's DOM is replaced on
+  every page, so without this those references would point at detached nodes
+  after the first click and the palette would open onto nothing.
+
+  Persisting is the right answer here rather than rebinding, because the palette
+  is identical on every page: the same seven destinations, in the same order,
+  with no per-page state. The sidebar deliberately does NOT persist, because its
+  aria-current has to change.
+*/}
+<dialog class="palette" id="palette" aria-label="Commands" transition:persist="palette">
   <div class="palette__form">
     <label class="visually-hidden" for="palette-input">Filter commands</label>
     <input
@@ -178,6 +191,8 @@ const commands: Command[] = [
 </style>
 
 <script>
+  import { navigate } from "astro:transitions/client";
+
   const palette = document.getElementById("palette") as HTMLDialogElement | null;
   const input = document.getElementById("palette-input") as HTMLInputElement | null;
   const empty = document.getElementById("palette-empty");
@@ -270,7 +285,7 @@ const commands: Command[] = [
       if (destination) {
         const item = items.find((i) => i.href === destination);
         if (item?.target === "_blank") window.open(destination, "_blank", "noopener");
-        else window.location.href = destination;
+        else void navigate(destination);
       }
     });
   }
