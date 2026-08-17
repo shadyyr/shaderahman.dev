@@ -164,6 +164,7 @@
     const dockToggle = $<HTMLButtonElement>("dock-toggle");
     const dockToggleGlyph = $("dock-toggle-glyph");
     const dockToggleLabel = $("dock-toggle-label");
+    const dockPanel = $("dock-panel");
 
     let tracks: Track[] = [];
     let index = 0;
@@ -173,6 +174,19 @@
     /* Ignore position events while a track swap is in flight, or the bar snaps
        back to the outgoing track's position for a frame. */
     let switching = false;
+    /*
+      Set the moment a track swap is requested, cleared only once the embed
+      reports a position that is actually near the start of something.
+
+      This is what stops the end-of-track test firing twice for one track. The
+      test is "position has reached duration", and after a swap is requested the
+      embed keeps reporting the OUTGOING track for a while, which still passes
+      that test. A timer cannot be the guard, because the wait is however long
+      the embed takes, and that is unbounded: it stretches when the frame is
+      throttled, which is exactly when the bug showed up. Waiting for evidence
+      that the next track began is the only guard that cannot be outrun.
+    */
+    let awaitingStart = false;
     let starting = false;
     /** Seconds, kept here because the dock has no input to read them off. */
     let position = 0;
@@ -305,6 +319,10 @@
       dockToggleGlyph.textContent = value ? "[+]" : "[-]";
       dockToggleLabel.textContent = value ? "Expand the player" : "Collapse the player";
       dockHead.textContent = value && title ? title : "now playing";
+      /* The panel is clipped rather than hidden, so its controls are still
+         focusable while invisible. inert takes them out of the tab order
+         without taking the iframe out of the rendering tree. */
+      dockPanel.inert = value;
     };
 
     dockToggle.addEventListener("click", () => {
@@ -368,6 +386,7 @@
       index = (to + tracks.length) % tracks.length;
       const track = tracks[index];
       switching = true;
+      awaitingStart = true;
       paint(track);
       controller?.loadUri(`spotify:track:${track.i}`);
       // loadUri does not start playback on its own. The gesture that got us
@@ -459,8 +478,21 @@
                     preview hits it at thirty seconds and somebody signed in to
                     Premium hits it at the end of the song. Either way the next
                     track follows, which is what makes it continuous for both.
+
+                    One advance per track, enforced by awaitingStart rather than
+                    by a timer. After a swap is requested the embed goes on
+                    reporting the outgoing track, which is still past its own
+                    end, so an unguarded test here advances a second time and
+                    skips a song. The flag is cleared only by a position that is
+                    genuinely near the start of a track, which is the only
+                    honest evidence the next one began.
                   */
-                  if (data.position >= data.duration - 900 && data.position > 0) go(index + 1);
+                  const atEnd = data.position >= data.duration - 900 && data.position > 0;
+                  /* The clear is the exact complement of the end test, so it
+                     cannot be defeated by a track shorter than some fixed
+                     settling window: "not at an end" is the evidence. */
+                  if (awaitingStart) awaitingStart = atEnd;
+                  else if (atEnd) go(index + 1);
                 }
                 if (typeof data.isPaused === "boolean") setPaused(data.isPaused);
               });
@@ -746,8 +778,32 @@
     color: var(--blue-hi);
   }
 
+  /*
+    COLLAPSED CLIPS THE PANEL. IT MUST NOT `display: none` IT.
+
+    Spotify's embed lives in here, and a display:none iframe is taken out of the
+    rendering tree: the browser suspends it, so it stops emitting the regular
+    playback_update events this player reads the track position from, and a
+    play() issued while it is hidden does not take.
+
+    That caused a real bug, and it only ever reproduced while minimised. The
+    end-of-track test fires when position reaches duration, and the swap used to
+    be guarded by a 400ms timer. With the iframe suspended, the new track had
+    not started when that timer expired, so the embed was still reporting the
+    OUTGOING track's position, still past the end: the test passed a second time
+    and advanced again. One song skipped, and no sound, because the play() had
+    landed on a suspended frame. The guard in the script is now state-based
+    rather than timed, which fixes the double advance on its own, but the frame
+    still has to stay rendered for playback to survive being minimised at all.
+
+    Clipping keeps the iframe laid out at its real size and merely out of sight,
+    which browsers do not suspend. `inert` is applied in the script alongside
+    this, because a clipped control is still focusable and a tab stop you cannot
+    see is worse than one you can.
+  */
   .dock--min .dock__panel {
-    display: none;
+    height: 0;
+    overflow: hidden;
   }
 
   .dock__body {
