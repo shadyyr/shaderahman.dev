@@ -1,6 +1,6 @@
 ---
-# The Vercel deployment for this one is gone (DEPLOYMENT_NOT_FOUND), so it
-# ships with a source link only until it is redeployed.
+# Redeployed. This entry shipped with a source link only for a while, because
+# the previous Vercel deployment was returning DEPLOYMENT_NOT_FOUND.
 title: "annabelle.sfx"
 period: "July 2026"
 date: "2026-07"
@@ -17,6 +17,7 @@ highlights:
   - label: "Swappable without touching code"
     detail: "The sixteen keys are built from a manifest.json that maps files to slots, with an optional colour shade per key. Changing the whole sound set means editing one JSON file and reloading."
 links:
+  - { label: "Try annabelle.sfx", url: "https://annabelle-sfx.vercel.app/" }
   - {
       label: "Source on GitHub",
       url: "https://github.com/shadyyr/sfx_soundboard",
