@@ -13,6 +13,14 @@ const resume = findResume();
       `cd` and `visit` are visual flavour, matching the command palette. They
       are hidden from assistive tech because "cd" is not a useful name to hear
       announced; the list carries the meaningful name on aria-label instead.
+
+      global.css now hides both labels below 56rem, where the stacked sidebar
+      was 198.6px of the 282.8px above the heading on a 375px screen, and this
+      pairing is what makes that free: the label is already aria-hidden, so
+      display: none removes nothing an assistive technology was being given,
+      and the group keeps its name either way. If you ever move a real name
+      into one of these paragraphs, drop the aria-hidden AND that media query
+      together, because from that moment on hiding it costs something.
     */}
     <p class="navgroup__label" aria-hidden="true">cd</p>
     <ul class="navlist" aria-label="Sections">

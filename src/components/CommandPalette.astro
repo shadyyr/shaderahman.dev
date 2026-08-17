@@ -137,6 +137,20 @@ const commands: Command[] = [
     outline-offset: -2px;
   }
 
+  /* `font: inherit` above resolves to the body's 15px, and iOS Safari zooms
+     the whole page in on focus for any input under 16px, then never zooms
+     back out. `-webkit-text-size-adjust: 100%` on html does not stop this:
+     that property rescales already-rendered text, it does not change what
+     counts as "small enough to zoom" when an input takes focus. Bumping past
+     16px only on coarse pointers keeps the desktop size exactly as authored.
+     Latent today, since the palette has no touch trigger by design, but the
+     fix stays cheap now so opening it never reintroduces the zoom. */
+  @media (pointer: coarse) {
+    .palette__input {
+      font-size: 16px;
+    }
+  }
+
   .palette__list {
     list-style: none;
     margin: 0;

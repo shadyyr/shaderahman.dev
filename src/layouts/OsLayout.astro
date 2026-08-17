@@ -26,7 +26,28 @@ const {
 } = Astro.props;
 
 const route = ROUTES.find((r) => r.path === path);
-const windowPath = route ? `${SITE.origin.replace(/^https?:\/\//, "")}${path}` : title;
+
+/*
+  The title bar path is split into a host and a route, and that split is the
+  only reason this site fits a 320px viewport.
+
+  It used to be one string, `shaderahman.dev/experience`. The bar is a flex row
+  whose three children all keep `min-width: auto`, and that string contains no
+  space, so its min-content width is the whole 26 characters and the bar's floor
+  scaled with the length of the path. Measured floors were /experience 357px,
+  /projects 341, /skills 326, against a 320px viewport, and every one of those
+  overflows traced to this bar and nothing else on the page.
+
+  So the host becomes its own element that global.css drops below 40rem, where
+  the full URL is not telling anyone anything they cannot see in their own
+  address bar. It is a real element rather than a second copy of the string
+  under a media query, so nothing is duplicated in the DOM or announced twice.
+
+  /404 has no route, so it shows its title ("Not found") and no host. That
+  string has a space in it and never set the floor.
+*/
+const host = SITE.origin.replace(/^https?:\/\//, "");
+const windowPath = route ? path : title;
 ---
 
 <!doctype html>
@@ -60,7 +81,10 @@ const windowPath = route ? `${SITE.origin.replace(/^https?:\/\//, "")}${path}` :
     <div class="app">
       <header class="titlebar">
         <span class="titlebar__name">{SITE.system.label}</span>
-        <span class="titlebar__path">{windowPath}</span>
+        {/* One line on purpose. A newline between the host span and the path
+            would emit a text node, and that space is a break opportunity the
+            bar does not want back. */}
+        <span class="titlebar__path">{route && <span class="titlebar__host">{host}</span>}{windowPath}</span>
         <span class="titlebar__glyphs" aria-hidden="true">[-][□][×]</span>
       </header>
 
@@ -98,6 +122,40 @@ const windowPath = route ? `${SITE.origin.replace(/^https?:\/\//, "")}${path}` :
 
       :global(html[data-js]) .hint {
         display: inline;
+      }
+
+      /*
+        A narrow window keeps the first two hints and drops the other three.
+
+        This rule lives here, beside the one it has to outrank, rather than in
+        global.css with the rest of the status bar. global.css carried it as
+
+          .statusbar__hints > *:nth-child(n + 3) { display: none }
+
+        which is (0,2,0), while Astro compiles the rule directly above into
+        `html[data-js] .hint[data-astro-cid-4dqkvzst]`, which is (0,3,1). The
+        more specific one won every time, so the pruning applied on exactly no
+        page where JavaScript ran, which is every page. It read as deliberate
+        in the source and had never executed.
+
+        What that cost, measured on the built page with a fine pointer: the
+        status bar was 68.2px tall at 375 and 101.8px at 320, two and three
+        wrapped lines of hints, against 34.6px at 641 and above. With this rule
+        it is 34.6px at every width.
+
+        On touch none of this applies. The `pointer: coarse` block in global.css
+        takes all five hints away, because each one names a key a phone does not
+        have. The reader this rule is for is the other one: a narrow desktop
+        window, which does have the keyboard the two survivors name.
+
+        The selector compiles to (0,4,1), one class-level above the rule it has
+        to beat. If you touch either of these two, check the pair still ranks
+        the way it should, because the failure mode is silent.
+      */
+      @media (max-width: 40rem) {
+        :global(html[data-js]) .hint:nth-child(n + 3) {
+          display: none;
+        }
       }
     </style>
 

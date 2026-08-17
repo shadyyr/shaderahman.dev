@@ -16,7 +16,8 @@ const full = expand(name);
     Terms with an expansion render as <abbr>, which is the semantic element for
     this and gives screen readers the full phrase for free. The dotted underline
     is there so a reader knows there is something to hover, rather than having
-    to discover it by accident.
+    to discover it by accident. Where hovering is not possible the underline
+    comes off, for the reason in the style block.
   */
 }
 <li class={starred ? "tag tag--starred" : "tag"}>
@@ -40,5 +41,39 @@ const full = expand(name);
 
   .tag--starred .tag__abbr {
     text-decoration-color: var(--amber-hi);
+  }
+
+  /*
+    A title attribute has no tap, long press or focus behaviour on iOS or
+    iPadOS. On a device that cannot hover, the dotted underline and the help
+    cursor therefore advertise something the reader has no way to open, on 12
+    chips on /projects and 7 on the home page. Take the advertisement away
+    rather than leave a dead affordance: a fake button that does nothing is
+    worse than an honest ornament, and a fake tooltip is the same trade. The
+    <abbr> and its title both stay, because that pair is what a screen reader
+    reads and it costs a touch reader nothing.
+
+    /skills answers this same query by rendering the expansion as real text.
+    That was tried here too, and measured, and it is wrong for these chips.
+    They are a scan row: one line of seven at 375px, white-space: nowrap, and
+    the point of them is being read in three seconds. Expanding them turned two
+    or three chips per card into bordered paragraphs, took the tallest tech row
+    on /projects from 77px to 228px, took a 23px row to 191px, and grew the
+    page from 10165px to 10741px at 375px. Nothing overflowed, so the numbers
+    are not the whole objection: a definition in a bordered box sitting next to
+    a plain chip reads as the more important of the two, which is backwards.
+    The stacked entries on /skills take the same sentence as one more dim line,
+    so that is the page where the expansions get told.
+
+    The query is hover rather than the pointer: coarse used elsewhere in this
+    repo, because hovering is the capability the tooltip depends on and pointer
+    size is not. Phones and tablets report both, so on the devices this is
+    actually for the two queries pick out the same machines.
+  */
+  @media (hover: none) {
+    .tag__abbr {
+      text-decoration: none;
+      cursor: auto;
+    }
   }
 </style>

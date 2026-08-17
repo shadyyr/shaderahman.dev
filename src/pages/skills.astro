@@ -71,17 +71,25 @@ const evidenceFor = (name: string) => usage.get(name.trim().toLowerCase()) ?? []
           <ul class="skills">
             {category.data.items.map((item) => {
               const evidence = evidenceFor(item.name);
+              const full = expand(item.name);
               return (
                 <li class="skill">
                   <span class="skill__name">
-                    {expand(item.name) ? (
-                      <abbr class="skill__abbr" title={expand(item.name)}>
+                    {full ? (
+                      <abbr class="skill__abbr" title={full}>
                         {item.name}
                       </abbr>
                     ) : (
                       item.name
                     )}
                   </span>
+                  {
+                    /* Painted only where a tooltip cannot open, see the style
+                       block. It goes above the note so the line order is what
+                       the term means, then the honest qualifier on it, then
+                       where it was used. */
+                  }
+                  {full && <span class="skill__expansion">{full}</span>}
                   {item.note && <span class="skill__note">{item.note}</span>}
                   {evidence.length > 0 && (
                     <span class="skill__evidence">
@@ -185,6 +193,46 @@ const evidenceFor = (name: string) => usage.get(name.trim().toLowerCase()) ?? []
     text-decoration: underline dotted var(--amber-dim);
     text-underline-offset: 0.25em;
     cursor: help;
+  }
+
+  /* The expansion, hidden while the tooltip that carries it still works. */
+  .skill__expansion {
+    display: none;
+    color: var(--amber-dim);
+    font-size: var(--text-sm);
+  }
+
+  /*
+    A title attribute has no tap, long press or focus behaviour on iOS or
+    iPadOS, and 13 terms on this page were relying on one. Tag.astro meets the
+    same failure and answers it by going quiet, because a tag is a chip in a
+    scan row with nowhere to put a sentence. This page can just say the thing:
+    a .skill is already a column of name, note and evidence, so the expansion
+    lands as one more dim line in a stack that has two of them already, in the
+    same size and color as the note beside it.
+
+    Measured at 375px: the page goes from 4729px to 5280px, and scrollWidth
+    still equals clientWidth at 375, 393 and 430. Nothing new is introduced
+    that looks tappable, and it holds with JavaScript off, since the expansion
+    is already in hand at build time.
+
+    The dotted underline and the help cursor come off with it. Once the
+    sentence is on the page there is nothing left for them to point at. The
+    <abbr> and its title stay: the visible line is a duplicate of the title
+    for people reading the screen, not a replacement for what a screen reader
+    is given.
+
+    On hover rather than pointer: coarse, see Tag.astro.
+  */
+  @media (hover: none) {
+    .skill__abbr {
+      text-decoration: none;
+      cursor: auto;
+    }
+
+    .skill__expansion {
+      display: block;
+    }
   }
 
   .skill__note {
