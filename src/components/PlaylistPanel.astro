@@ -247,15 +247,52 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
       var deck = document.getElementById("player-track");
       if (!source || !deck) return;
 
+      /*
+        Stand down if something is already playing.
+
+        Under the client router this script runs again every time the visitor
+        navigates back to the home page, and a fresh random pick would repaint
+        the deck to a song that is not the one coming out of the speakers. The
+        controller repaints the panel itself in that case, from what is
+        actually playing. See PlayerDock.
+      */
+      if (window.__playerActive) return;
+
       var data = JSON.parse(source.textContent);
       var blocks = data.b || [];
       if (!blocks.length) return;
 
-      // A run first, then a start inside it. The tail of a run cannot open,
-      // because the queue below the deck would have nothing true to show.
-      var block = blocks[Math.floor(Math.random() * blocks.length)];
-      if (block.t.length <= data.l) return;
-      var offset = Math.floor(Math.random() * (block.t.length - data.l));
+      /*
+        ONCE PER VISIT, NOT ONCE PER PAGE VIEW.
+
+        The client router re-runs this every time the home page is entered, so
+        picking here unconditionally would reshuffle on every trip back from
+        /experience. Somebody who reads a card and comes back would find a
+        different song sitting in the deck, which reads as the page losing its
+        place rather than as a feature.
+
+        So the pick is made once and remembered on `window`, and every later
+        run re-applies it. `window` is the right scope precisely because it is
+        the thing the router does not replace: it lasts exactly as long as the
+        visit does, and a real reload is a new visit and deserves a new song.
+
+        Stored as a run index and an offset rather than the track itself, since
+        the runs are generated at build time and are identical on every page of
+        a given build.
+      */
+      var pick = window.__playerPick;
+      if (!pick) {
+        // A run first, then a start inside it. The tail of a run cannot open,
+        // because the queue below the deck would have nothing true to show.
+        var at = Math.floor(Math.random() * blocks.length);
+        if (blocks[at].t.length <= data.l) return;
+        pick = { b: at, o: Math.floor(Math.random() * (blocks[at].t.length - data.l)) };
+        window.__playerPick = pick;
+      }
+
+      var block = blocks[pick.b];
+      var offset = pick.o;
+      if (!block || block.t.length <= offset + data.l) return;
 
       var track = block.t[offset];
       var clock = function (ms) {
@@ -289,47 +326,49 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
         });
       };
 
-      document.getElementById("player-art").src =
-        "https://i.scdn.co/image/" + track.a;
-      deck.textContent = track.n;
-      artistsInto(document.getElementById("player-artist"), track.r);
-      document.getElementById("player-duration").textContent = clock(track.d);
-      document.getElementById("player-open").href =
-        "https://open.spotify.com/track/" + track.i;
-      document.getElementById("player-index").textContent =
-        String(block.s + offset + 1);
+      /*
+        Kept as a function because the deck has to be repainted every time the
+        home page is entered, not only the first time.
 
-      var seek = document.getElementById("player-seek");
-      seek.max = String(Math.round(track.d / 1000));
-      seek.value = "0";
+        Astro does not re-execute an inline script after a client-side swap, so
+        without this the panel would come back showing whatever the build
+        rendered into it rather than the song this visit picked. Measured
+        before it was fixed: first view "Ghost Town", back from /experience
+        "LEMON LIME", which is the build-time default.
+
+        Everything is looked up inside, because on a re-entry every one of
+        these elements is a node that did not exist a moment ago.
+      */
+      var applyDeck = function () {
+        var name = document.getElementById("player-track");
+        if (!name) return;
+        document.getElementById("player-art").src =
+          "https://i.scdn.co/image/" + track.a;
+        name.textContent = track.n;
+        artistsInto(document.getElementById("player-artist"), track.r);
+        document.getElementById("player-duration").textContent = clock(track.d);
+        document.getElementById("player-open").href =
+          "https://open.spotify.com/track/" + track.i;
+        document.getElementById("player-index").textContent =
+          String(block.s + offset + 1);
+        var seek = document.getElementById("player-seek");
+        seek.max = String(Math.round(track.d / 1000));
+        seek.value = "0";
+      };
+
+      applyDeck();
 
       /* Handed to the second half, which cannot re-run the pick without
          choosing a different song than the one now on screen. */
-      window.__playerOpening = { block: block, offset: offset, into: artistsInto, clock: clock };
+      window.__playerOpening = {
+        block: block,
+        offset: offset,
+        into: artistsInto,
+        clock: clock,
+        deck: applyDeck,
+      };
     })();
   </script>
-
-  {/*
-    Spotify's player. It has to stay visible: their terms require the embed and
-    its branding be shown and unaltered, so this is not a widget being hidden
-    behind a nicer one. It is the thing actually playing, and the deck above is
-    a set of controls for it.
-
-    It is also the one thing here that does not take the site's colours. The
-    embed tints itself with the artwork's dominant colour, so it changes every
-    track and is often a block of blue in a palette where blue means "you can
-    click this". createController silently ignores unknown options, so passing
-    theme: 0 does nothing; it was tried. The only way to be rid of it is the Web
-    Playback SDK, which needs Extended Quota Mode, which asks for a registered
-    business and 250,000 monthly active users.
-  */}
-  <div class="player__source" id="player-source" hidden>
-    <p class="player__source-label">playing via</p>
-    {/* Where in the full playlist the panel is currently sitting. Written by
-        the shuffle below, read by the controller, so the two cannot disagree
-        about which track "play" means. */}
-    <div class="player__embed" id="player-embed" data-start={openAt}></div>
-  </div>
 
   <p class="player__queue-label">Up next</p>
   <ul class="player__list" id="player-queue">
@@ -356,13 +395,18 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
   </ul>
 
     {/*
-      The other half of the shuffle, below the rows it rewrites and below the
-      embed whose data-start it sets.
+      The other half of the shuffle, below the rows it rewrites.
 
       It rewrites the rows the server already rendered instead of rebuilding
       them. Rebuilding would mean re-stamping Astro's scoped-style attribute
-      onto every new node, which is the bug documented in the controller below;
-      updating text in place cannot hit it.
+      onto every new node, which is the bug documented in PlayerDock's
+      controller; updating text in place cannot hit it.
+
+      The pick is handed over on `window`, not by writing an attribute onto the
+      embed. The embed lives in the dock now, which the layout renders after
+      the page content, so it does not exist yet while this is running:
+      getElementById would return null here and the start index would silently
+      fall back to zero. `window` has no such ordering problem.
     */}
     <script is:inline>
       (function () {
@@ -370,18 +414,39 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
         if (!open) return;
         delete window.__playerOpening;
 
-        var at = open.block.s + open.offset;
-        var embed = document.getElementById("player-embed");
-        if (embed) embed.setAttribute("data-start", String(at));
+        window.__playerStart = open.block.s + open.offset;
 
-        var rows = document.querySelectorAll("#player-queue .player__row");
-        for (var row = 0; row < rows.length; row++) {
-          var next = open.block.t[open.offset + 1 + row];
-          if (!next) break;
-          rows[row].querySelector(".player__row-play").textContent = next.n;
-          open.into(rows[row].querySelector(".player__row-artist"), next.r);
-          rows[row].querySelector(".player__row-time").textContent = open.clock(next.d);
-        }
+        var applyQueue = function () {
+          var rows = document.querySelectorAll("#player-queue .player__row");
+          for (var row = 0; row < rows.length; row++) {
+            var next = open.block.t[open.offset + 1 + row];
+            if (!next) break;
+            rows[row].querySelector(".player__row-play").textContent = next.n;
+            open.into(rows[row].querySelector(".player__row-artist"), next.r);
+            rows[row].querySelector(".player__row-time").textContent = open.clock(next.d);
+          }
+        };
+
+        applyQueue();
+
+        /*
+          Re-apply on every later entry to the home page.
+
+          An inline script is not re-executed after a client-side swap, so this
+          listener is the only thing that runs when somebody comes back from
+          /experience. Without it the panel returns showing the build-time
+          default rather than the song this visit picked.
+
+          Registered once: this whole script only runs on the first entry, for
+          the same reason. If something is playing by then the controller owns
+          the panel and repaints it from what is actually coming out of the
+          speakers, so this stands aside.
+        */
+        document.addEventListener("astro:page-load", function () {
+          if (window.__playerActive) return;
+          open.deck();
+          applyQueue();
+        });
       })();
     </script>
 
@@ -389,350 +454,6 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
   </div>
 </section>
 
-<script>
-  /*
-    Wraps Spotify's embed rather than replacing it.
-
-    Their iFrame API gives play, pause, seek and a position event, but no next
-    or previous, so those are done by loading the next track's uri. That is the
-    reason this needs the track list at all, and the reason the list is fetched
-    rather than inlined: 35.5KB is not worth spending on visitors who never
-    press play.
-
-    Verified against the real controller rather than the docs, which do not list
-    all of it: addListener, removeListener, on, off, once, loadUri, loadEntity,
-    play, playFromStart, restart, pause, resume, togglePlay, seek, destroy.
-  */
-  type Track = {
-    i: string;
-    a: string | null;
-    n: string;
-    /** [name, spotify artist id] pairs, so each can be its own link. */
-    r: [string, string][];
-    d: number;
-  };
-
-  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-
-  const embed = $("player-embed");
-  if (embed) {
-    /* The wrapper, not the embed itself: unhiding the wrapper reveals the
-       "playing via" label with it, so the player never appears unattributed. */
-    const source = $("player-source");
-    const openLink = $<HTMLAnchorElement>("player-open");
-    const art = $<HTMLImageElement>("player-art");
-    const trackName = $("player-track");
-    const artistOut = $("player-artist");
-    const seek = $<HTMLInputElement>("player-seek");
-    const elapsed = $("player-elapsed");
-    const duration = $("player-duration");
-    const playBtn = $<HTMLButtonElement>("player-play");
-    const playGlyph = $("player-play-glyph");
-    const playLabel = $("player-play-label");
-    const prevBtn = $<HTMLButtonElement>("player-prev");
-    const nextBtn = $<HTMLButtonElement>("player-next");
-    const indexOut = $("player-index");
-    const queue = $<HTMLUListElement>("player-queue");
-
-    /* How many rows the queue shows, read off the server-rendered list so the
-       two cannot disagree when the `listed` prop changes. */
-    const QUEUE_ROWS = queue.children.length;
-
-    /*
-      Astro scopes this component's styles with a data-astro-cid attribute, so a
-      rule written as .player__row compiles to .player__row[data-astro-cid-abc].
-      Anything built with createElement is missing that attribute, every scoped
-      rule skips it, and the rebuilt rows come back with no layout and native
-      browser buttons for titles. It looks like the css broke; the css is fine
-      and the selector genuinely does not match.
-
-      So the attribute is read off a row the server rendered and stamped onto
-      everything built here. Read rather than hardcoded, because the hash is
-      generated per build and would go stale the first time this file changed.
-    */
-    const CID = [...(queue.querySelector("li")?.attributes ?? [])]
-      .map((attribute) => attribute.name)
-      .find((name) => name.startsWith("data-astro-cid-"));
-
-    const scoped = <T extends HTMLElement>(element: T): T => {
-      if (CID) element.setAttribute(CID, "");
-      return element;
-    };
-
-    let tracks: Track[] = [];
-    let index = 0;
-
-    /*
-      Where the shuffle above left the panel, as an index into the full
-      playlist rather than into the inlined block. Everything the visitor can
-      see is already showing this track, so "play" has to mean this one and the
-      queue's offsets have to be measured from it.
-    */
-    const startIndex = Number(embed.dataset.start) || 0;
-    let controller: any = null;
-    let paused = true;
-    let scrubbing = false;
-    /* Ignore position events while a track swap is in flight, or the bar snaps
-       back to the outgoing track's position for a frame. */
-    let switching = false;
-
-    const clock = (seconds: number) => {
-      const s = Math.max(0, Math.round(seconds));
-      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-    };
-
-    /*
-      How much of the track is behind the thumb, as 0 to 1. The stylesheet
-      turns it into a width.
-
-      Derived from the input's own value every time rather than accumulated, so
-      the trail cannot get out of step with the dot: seeking backwards shrinks
-      it by exactly the path playing forwards grew it, and a track change that
-      resets value to 0 resets the trail with it. One source of truth, read
-      after every write to value or max.
-    */
-    const setProgress = () => {
-      const max = Number(seek.max);
-      const value = Number(seek.value);
-      seek.style.setProperty(
-        "--progress",
-        String(max > 0 ? Math.min(1, Math.max(0, value / max)) : 0),
-      );
-    };
-
-    /*
-      Artist names as links, comma separated, built as nodes rather than a
-      string of html. Track and artist names arrive from an API and go straight
-      into the page; textContent cannot be talked into becoming markup.
-    */
-    const artistNodes = (pairs: [string, string][]) => {
-      const frag = document.createDocumentFragment();
-      pairs.forEach(([name, id], i) => {
-        if (i > 0) frag.append(", ");
-        const link = scoped(document.createElement("a"));
-        link.href = `https://open.spotify.com/artist/${id}`;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        link.textContent = name;
-        frag.append(link);
-      });
-      return frag;
-    };
-
-    /*
-      The list is a queue, not a table of contents: it always shows what plays
-      after whatever is playing, wrapping past the end of the playlist. Rebuilt
-      whole on every track change rather than diffed, because six rows is
-      nothing and a diff would be more code than it saves.
-    */
-    const renderQueue = () => {
-      if (!tracks.length) return;
-      queue.replaceChildren();
-
-      for (let step = 1; step <= QUEUE_ROWS; step++) {
-        const at = (index + step) % tracks.length;
-        const track = tracks[at];
-
-        const row = scoped(document.createElement("li"));
-        row.className = "player__row";
-
-        /*
-          A button for the title rather than a click handler on the whole row,
-          because the row also carries artist links, and an anchor inside a
-          button is invalid and unreachable by keyboard.
-        */
-        const jump = scoped(document.createElement("button"));
-        jump.type = "button";
-        jump.className = "player__row-play";
-        jump.textContent = track.n;
-        jump.addEventListener("click", () => go(at));
-
-        const artists = scoped(document.createElement("span"));
-        artists.className = "player__row-artist";
-        artists.append(artistNodes(track.r));
-
-        const time = scoped(document.createElement("span"));
-        time.className = "player__row-time";
-        time.textContent = clock(track.d / 1000);
-
-        row.append(jump, artists, time);
-        queue.append(row);
-      }
-    };
-
-    const paint = (track: Track) => {
-      trackName.textContent = track.n;
-      artistOut.replaceChildren(artistNodes(track.r));
-      if (track.a) art.src = `https://i.scdn.co/image/${track.a}`;
-      art.alt = "";
-      seek.max = String(Math.round(track.d / 1000));
-      seek.value = "0";
-      setProgress();
-      elapsed.textContent = "0:00";
-      duration.textContent = clock(track.d / 1000);
-      indexOut.textContent = String(index + 1);
-      openLink.href = `https://open.spotify.com/track/${track.i}`;
-      renderQueue();
-    };
-
-    const setPaused = (value: boolean) => {
-      paused = value;
-      playGlyph.textContent = value ? ">" : "||";
-      playLabel.textContent = value ? "Play" : "Pause";
-      playBtn.setAttribute("aria-pressed", String(!value));
-    };
-
-    const go = (to: number) => {
-      if (!tracks.length) return;
-      // Wraps, so the end of the playlist rolls into the start rather than
-      // stopping dead. This is the thing that makes it play continuously.
-      index = (to + tracks.length) % tracks.length;
-      const track = tracks[index];
-      switching = true;
-      paint(track);
-      controller?.loadUri(`spotify:track:${track.i}`);
-      // loadUri does not start playback on its own. The gesture that got us
-      // here still counts, so this is not blocked by autoplay policy.
-      window.setTimeout(() => {
-        controller?.play();
-        switching = false;
-      }, 400);
-      setPaused(false);
-    };
-
-    let starting = false;
-
-    const loadApi = () =>
-      new Promise<any>((resolve, reject) => {
-        if ((window as any).__spotifyIframeApi) return resolve((window as any).__spotifyIframeApi);
-        (window as any).onSpotifyIframeApiReady = (api: any) => {
-          (window as any).__spotifyIframeApi = api;
-          resolve(api);
-        };
-        const tag = document.createElement("script");
-        tag.src = "https://open.spotify.com/embed/iframe-api/v1";
-        tag.async = true;
-        tag.onerror = () => reject(new Error("Spotify iframe API did not load"));
-        document.head.append(tag);
-      });
-
-    const start = async (from = 0) => {
-      if (starting || controller) return;
-      starting = true;
-      playLabel.textContent = "Loading";
-
-      try {
-        const [api, list] = await Promise.all([
-          loadApi(),
-          fetch("/playlist.json").then((r) => r.json() as Promise<Track[]>),
-        ]);
-        tracks = list;
-        index = (startIndex + from) % tracks.length;
-
-        source.hidden = false;
-        await new Promise<void>((resolve) => {
-          api.createController(
-            embed,
-            { uri: `spotify:track:${tracks[index].i}`, width: "100%", height: "80" },
-            (ctrl: any) => {
-              controller = ctrl;
-
-              ctrl.addListener("playback_update", (event: any) => {
-                const data = event?.data;
-                if (!data || switching) return;
-
-                if (!scrubbing && typeof data.position === "number") {
-                  const seconds = data.position / 1000;
-                  seek.value = String(Math.round(seconds));
-                  setProgress();
-                  elapsed.textContent = clock(seconds);
-                }
-                if (typeof data.duration === "number" && data.duration > 0) {
-                  seek.max = String(Math.round(data.duration / 1000));
-                  /* max moved, so the same value is now a different fraction. */
-                  setProgress();
-                  duration.textContent = clock(data.duration / 1000);
-
-                  /*
-                    The embed has no "track ended" event, so the end is inferred
-                    from the position reaching the duration. Somebody on a
-                    preview hits it at thirty seconds and somebody signed in to
-                    Premium hits it at the end of the song. Either way the next
-                    track follows, which is what makes it continuous for both.
-                  */
-                  if (data.position >= data.duration - 900 && data.position > 0) go(index + 1);
-                }
-                if (typeof data.isPaused === "boolean") setPaused(data.isPaused);
-              });
-
-              resolve();
-            },
-          );
-        });
-
-        prevBtn.disabled = false;
-        nextBtn.disabled = false;
-        seek.disabled = false;
-        paint(tracks[index]);
-        controller.play();
-        setPaused(false);
-      } catch {
-        playLabel.textContent = "Play";
-        starting = false;
-        source.hidden = true;
-        trackName.textContent = "Spotify would not load";
-        artistOut.textContent = "Open the playlist on Spotify instead";
-        return;
-      }
-      starting = false;
-    };
-
-    /*
-      The server-rendered rows carry an offset rather than an index, so a click
-      before the track list has loaded still means the right thing: start
-      playing, that many tracks along from where we are.
-    */
-    queue.querySelectorAll<HTMLButtonElement>("[data-jump]").forEach((button) => {
-      button.addEventListener("click", () => {
-        const offset = Number(button.dataset.jump);
-        if (!tracks.length) return void start(offset);
-        go(index + offset);
-      });
-    });
-
-    playBtn.addEventListener("click", () => {
-      if (!controller) return void start();
-      controller.togglePlay();
-      setPaused(!paused);
-    });
-
-    prevBtn.addEventListener("click", () => {
-      /* Restart the current track first, then step back, which is what every
-         other transport control does and what a listener expects. */
-      const at = Number(seek.value);
-      if (at > 3) return void controller?.seek(0);
-      go(index - 1);
-    });
-
-    nextBtn.addEventListener("click", () => go(index + 1));
-
-    /* Tracks the drag itself, so the trail follows the thumb under the cursor
-       rather than waiting for the next position event from the embed. This is
-       also the path that shrinks it when the drag goes backwards. */
-    seek.addEventListener("input", () => {
-      scrubbing = true;
-      setProgress();
-      elapsed.textContent = clock(Number(seek.value));
-    });
-
-    seek.addEventListener("change", () => {
-      /* seek() takes seconds, which is the one unit mismatch in this API: the
-         position that arrives on playback_update is milliseconds. */
-      controller?.seek(Number(seek.value));
-      scrubbing = false;
-    });
-  }
-</script>
 
 <style>
   /*

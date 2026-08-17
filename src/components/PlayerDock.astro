@@ -1,0 +1,887 @@
+---
+/**
+ * The player that follows you around the site.
+ *
+ * This component owns two things that have to outlive a page: Spotify's embed,
+ * which is the thing actually producing sound, and the controller that drives
+ * it. Both sit in the layout rather than on the home page, so they exist on
+ * every route.
+ *
+ * WHY THIS EXISTS AT ALL. The site is a static multi-page build, so a normal
+ * navigation is a full document load: the iframe is destroyed and the audio
+ * stops. Nothing about CSS or saved state changes that. Astro's ClientRouter
+ * swaps the page inside one document instead, and `transition:persist` below
+ * carries this element through the swap untouched, which is what keeps the
+ * sound going.
+ *
+ * A "save the position and resume on the next page" version was considered and
+ * cannot work: autoplay policy is per document, so a freshly loaded page has no
+ * user gesture and a cross-origin iframe is blocked from starting on its own.
+ * The music would stop at every link and need a click to come back.
+ */
+---
+
+{/*
+  transition:persist is the whole mechanism. Astro keeps this exact DOM node
+  across a navigation rather than replacing it, so the iframe inside it is never
+  torn down and never reloads.
+
+  It carries a name so the match is explicit rather than positional.
+
+  hidden until the first press of play, because a dock advertising nothing is
+  just chrome. The controller unhides it.
+*/}
+<aside
+  class="dock"
+  id="dock"
+  transition:persist="player"
+  aria-label="Now playing"
+  hidden
+>
+  <div class="dock__bar" aria-hidden="true"><span class="dock__fill" id="dock-fill"></span></div>
+
+  {/*
+    A title bar with a real control in it, which is the one place on this site
+    where the window costume is allowed to do something. The three glyphs in the
+    page's own title bar are inert ornaments on purpose; this one is a button,
+    so it is a button: focusable, labelled, and carrying aria-expanded.
+
+    Collapsed, the title bar keeps the cover, track and artist visible, so the
+    dock still answers "what is playing" at a glance without being expanded.
+  */}
+  <div class="dock__head">
+    <img class="dock__min-art" id="dock-min-art" src="" alt="" width="72" height="72" decoding="async" />
+    <span class="dock__min-meta">
+      <span class="dock__label" id="dock-head">now playing</span>
+      <span class="dock__min-artist" id="dock-min-artist"></span>
+    </span>
+    <span class="dock__via" id="dock-via" aria-hidden="true">via Spotify</span>
+    <button
+      class="dock__toggle"
+      id="dock-toggle"
+      type="button"
+      aria-expanded="true"
+      aria-controls="dock-panel"
+    >
+      <span id="dock-toggle-glyph" aria-hidden="true">[-]</span>
+      <span class="visually-hidden" id="dock-toggle-label">Collapse the player</span>
+    </button>
+  </div>
+
+  <div class="dock__panel" id="dock-panel">
+  <div class="dock__body">
+    {/* Spotify's own artwork, unaltered, same as the panel on the home page. */}
+    <img class="dock__art" id="dock-art" src="" alt="" width="96" height="96" decoding="async" />
+
+    <div class="dock__meta">
+      <p class="dock__track" id="dock-track">Nothing playing</p>
+      <p class="dock__artist" id="dock-artist"></p>
+
+      <div class="dock__controls">
+        <button class="dock__button" id="dock-prev" type="button">
+          <span aria-hidden="true">|&lt;&lt;</span>
+          <span class="visually-hidden">Previous track</span>
+        </button>
+        <button class="dock__button" id="dock-play" type="button">
+          <span id="dock-play-glyph" aria-hidden="true">&gt;</span>
+          <span class="visually-hidden" id="dock-play-label">Play</span>
+        </button>
+        <button class="dock__button" id="dock-next" type="button">
+          <span aria-hidden="true">&gt;&gt;|</span>
+          <span class="visually-hidden">Next track</span>
+        </button>
+        <a class="dock__home" href="/#playlist-heading">
+          <span aria-hidden="true">[]</span>
+          <span class="visually-hidden">Open the full playlist</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {/*
+    Spotify's player, and it has to stay visible wherever it goes: their terms
+    require the embed and its branding be shown and unaltered. That is why the
+    dock is a small window rather than a strip, and why this cannot be hidden
+    once the transport above is available.
+  */}
+  <div class="dock__source" id="player-source" hidden>
+    <p class="dock__source-label">playing via</p>
+    <div class="dock__embed" id="player-embed" data-start="0"></div>
+  </div>
+  </div>
+</aside>
+
+<script>
+  /*
+    Wraps Spotify's embed rather than replacing it.
+
+    Their iFrame API gives play, pause, seek and a position event, but no next
+    or previous, so those are done by loading the next track's uri. That is the
+    reason this needs the track list at all, and the reason the list is fetched
+    rather than inlined: 35.5KB is not worth spending on visitors who never
+    press play.
+
+    Verified against the real controller rather than the docs, which do not list
+    all of it: addListener, removeListener, on, off, once, loadUri, loadEntity,
+    play, playFromStart, restart, pause, resume, togglePlay, seek, destroy.
+
+    THIS SCRIPT RUNS ONCE FOR THE WHOLE VISIT. Under the client router a module
+    script is executed the first time it appears and never again, so everything
+    below keeps its state across navigations: `tracks`, `index` and `controller`
+    survive precisely because this closure is never rebuilt. That is a feature
+    here and a trap everywhere else, which is why the home page's panel is
+    rebound on every page load rather than captured once.
+  */
+  type Track = {
+    i: string;
+    a: string | null;
+    n: string;
+    /** [name, spotify artist id] pairs, so each can be its own link. */
+    r: [string, string][];
+    d: number;
+  };
+
+  const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
+
+  const embed = $("player-embed");
+  if (embed) {
+    /* Dock elements. These are inside transition:persist, so they are the same
+       nodes for the life of the visit and are bound exactly once. */
+    const dock = $("dock");
+    const source = $("dock") && $("player-source");
+    const dockArt = $<HTMLImageElement>("dock-art");
+    const dockMinArt = $<HTMLImageElement>("dock-min-art");
+    const dockTrack = $("dock-track");
+    const dockArtist = $("dock-artist");
+    const dockMinArtist = $("dock-min-artist");
+    const dockFill = $("dock-fill");
+    const dockPlay = $<HTMLButtonElement>("dock-play");
+    const dockGlyph = $("dock-play-glyph");
+    const dockLabel = $("dock-play-label");
+    const dockPrev = $<HTMLButtonElement>("dock-prev");
+    const dockNext = $<HTMLButtonElement>("dock-next");
+    const dockHead = $("dock-head");
+    const dockToggle = $<HTMLButtonElement>("dock-toggle");
+    const dockToggleGlyph = $("dock-toggle-glyph");
+    const dockToggleLabel = $("dock-toggle-label");
+
+    let tracks: Track[] = [];
+    let index = 0;
+    let controller: any = null;
+    let paused = true;
+    let scrubbing = false;
+    /* Ignore position events while a track swap is in flight, or the bar snaps
+       back to the outgoing track's position for a frame. */
+    let switching = false;
+    let starting = false;
+    /** Seconds, kept here because the dock has no input to read them off. */
+    let position = 0;
+    let duration = 0;
+    /** What the collapsed title bar shows, since the deck is hidden then. */
+    let title = "";
+
+    /*
+      The home page's panel, or null when we are not on the home page.
+
+      Re-queried on every navigation. The panel's DOM is thrown away and rebuilt
+      by the router, so anything captured once would be pointing at detached
+      nodes within one click.
+    */
+    type Panel = {
+      art: HTMLImageElement;
+      track: HTMLElement;
+      artist: HTMLElement;
+      seek: HTMLInputElement;
+      elapsed: HTMLElement;
+      duration: HTMLElement;
+      play: HTMLButtonElement;
+      glyph: HTMLElement;
+      label: HTMLElement;
+      prev: HTMLButtonElement;
+      next: HTMLButtonElement;
+      index: HTMLElement;
+      queue: HTMLUListElement;
+      open: HTMLAnchorElement;
+      rows: number;
+      cid: string | undefined;
+    };
+    let panel: Panel | null = null;
+
+    const clock = (seconds: number) => {
+      const s = Math.max(0, Math.round(seconds));
+      return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    };
+
+    const scoped = <T extends HTMLElement>(element: T): T => {
+      if (panel?.cid) element.setAttribute(panel.cid, "");
+      return element;
+    };
+
+    /*
+      Artist names as links, comma separated, built as nodes rather than a
+      string of html. Track and artist names arrive from an API and go straight
+      into the page; textContent cannot be talked into becoming markup.
+    */
+    const artistNodes = (pairs: [string, string][], stamp = true) => {
+      const frag = document.createDocumentFragment();
+      pairs.forEach(([name, id], i) => {
+        if (i > 0) frag.append(", ");
+        const link = document.createElement("a");
+        if (stamp) scoped(link);
+        link.href = `https://open.spotify.com/artist/${id}`;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = name;
+        frag.append(link);
+      });
+      return frag;
+    };
+
+    /*
+      How much of the track is behind the thumb, as 0 to 1. Both surfaces read
+      it: the panel's stylesheet turns it into a gradient stop, the dock's into
+      a width.
+
+      Derived from position and duration every time rather than accumulated, so
+      it cannot get out of step: seeking backwards shrinks it by exactly the
+      path playing forwards grew it, and a track change resets it with them.
+    */
+    const setProgress = () => {
+      const fraction = duration > 0 ? Math.min(1, Math.max(0, position / duration)) : 0;
+      dockFill.style.width = `${fraction * 100}%`;
+      if (panel) panel.seek.style.setProperty("--progress", String(fraction));
+    };
+
+    /*
+      The list is a queue, not a table of contents: it always shows what plays
+      after whatever is playing, wrapping past the end of the playlist. Rebuilt
+      whole on every track change rather than diffed, because six rows is
+      nothing and a diff would be more code than it saves.
+    */
+    const renderQueue = () => {
+      if (!panel || !tracks.length) return;
+      panel.queue.replaceChildren();
+
+      for (let step = 1; step <= panel.rows; step++) {
+        const at = (index + step) % tracks.length;
+        const track = tracks[at];
+
+        const row = scoped(document.createElement("li"));
+        row.className = "player__row";
+
+        /*
+          A button for the title rather than a click handler on the whole row,
+          because the row also carries artist links, and an anchor inside a
+          button is invalid and unreachable by keyboard.
+        */
+        const jump = scoped(document.createElement("button"));
+        jump.type = "button";
+        jump.className = "player__row-play";
+        jump.textContent = track.n;
+        jump.addEventListener("click", () => go(at));
+
+        const artists = scoped(document.createElement("span"));
+        artists.className = "player__row-artist";
+        artists.append(artistNodes(track.r));
+
+        const time = scoped(document.createElement("span"));
+        time.className = "player__row-time";
+        time.textContent = clock(track.d / 1000);
+
+        row.append(jump, artists, time);
+        panel.queue.append(row);
+      }
+    };
+
+    /*
+      Collapsed, the dock is just its title bar: the progress line, the track
+      name and the control to open it again. The Spotify embed goes with the
+      panel, which is why the attribution moves up into the title bar rather
+      than disappearing with it. Their branding stays on screen either way.
+    */
+    const setCollapsed = (value: boolean) => {
+      dock.classList.toggle("dock--min", value);
+      dockToggle.setAttribute("aria-expanded", String(!value));
+      dockToggleGlyph.textContent = value ? "[+]" : "[-]";
+      dockToggleLabel.textContent = value ? "Expand the player" : "Collapse the player";
+      dockHead.textContent = value && title ? title : "now playing";
+    };
+
+    dockToggle.addEventListener("click", () => {
+      setCollapsed(!dock.classList.contains("dock--min"));
+    });
+
+    /** Writes a track into both surfaces, whichever of them exist right now. */
+    const paint = (track: Track) => {
+      const art = track.a ? `https://i.scdn.co/image/${track.a}` : "";
+
+      title = track.n;
+      /* Keep the collapsed title bar current, but do not expand it behind the
+         visitor's back: only the text changes, never the state. */
+      if (dock.classList.contains("dock--min")) dockHead.textContent = title;
+      dockTrack.textContent = track.n;
+      dockArtist.replaceChildren(artistNodes(track.r, false));
+      dockMinArtist.textContent = track.r.map(([name]) => name).join(", ");
+      if (art) {
+        dockArt.src = art;
+        dockMinArt.src = art;
+      }
+      dockArt.alt = "";
+      dockMinArt.alt = "";
+
+      position = 0;
+      duration = track.d / 1000;
+
+      if (panel) {
+        panel.track.textContent = track.n;
+        panel.artist.replaceChildren(artistNodes(track.r));
+        if (art) panel.art.src = art;
+        panel.art.alt = "";
+        panel.seek.max = String(Math.round(duration));
+        panel.seek.value = "0";
+        panel.elapsed.textContent = "0:00";
+        panel.duration.textContent = clock(duration);
+        panel.index.textContent = String(index + 1);
+        panel.open.href = `https://open.spotify.com/track/${track.i}`;
+      }
+
+      setProgress();
+      renderQueue();
+    };
+
+    const setPaused = (value: boolean) => {
+      paused = value;
+      dockGlyph.textContent = value ? ">" : "||";
+      dockLabel.textContent = value ? "Play" : "Pause";
+      dockPlay.setAttribute("aria-pressed", String(!value));
+      if (panel) {
+        panel.glyph.textContent = value ? ">" : "||";
+        panel.label.textContent = value ? "Play" : "Pause";
+        panel.play.setAttribute("aria-pressed", String(!value));
+      }
+    };
+
+    const go = (to: number) => {
+      if (!tracks.length) return;
+      // Wraps, so the end of the playlist rolls into the start rather than
+      // stopping dead. This is the thing that makes it play continuously.
+      index = (to + tracks.length) % tracks.length;
+      const track = tracks[index];
+      switching = true;
+      paint(track);
+      controller?.loadUri(`spotify:track:${track.i}`);
+      // loadUri does not start playback on its own. The gesture that got us
+      // here still counts, so this is not blocked by autoplay policy.
+      window.setTimeout(() => {
+        controller?.play();
+        switching = false;
+      }, 400);
+      setPaused(false);
+    };
+
+    const loadApi = () =>
+      new Promise<any>((resolve, reject) => {
+        if ((window as any).__spotifyIframeApi) return resolve((window as any).__spotifyIframeApi);
+        (window as any).onSpotifyIframeApiReady = (api: any) => {
+          (window as any).__spotifyIframeApi = api;
+          resolve(api);
+        };
+        const tag = document.createElement("script");
+        tag.src = "https://open.spotify.com/embed/iframe-api/v1";
+        tag.async = true;
+        tag.onerror = () => reject(new Error("Spotify iframe API did not load"));
+        document.head.append(tag);
+      });
+
+    const start = async (from = 0) => {
+      if (starting || controller) return;
+      starting = true;
+      dockLabel.textContent = "Loading";
+      if (panel) panel.label.textContent = "Loading";
+
+      /*
+        Where in the full playlist to begin, published by the home page's
+        shuffle on `window` rather than on this element, because the dock is
+        rendered after the page content and does not exist while that shuffle
+        runs.
+
+        Read at press time, not at load time: on a client-side navigation back
+        to the home page the shuffle runs again, so this has to be whatever it
+        is the moment somebody actually presses play.
+      */
+      const startIndex = Number((window as any).__playerStart) || 0;
+
+      try {
+        const [api, list] = await Promise.all([
+          loadApi(),
+          fetch("/playlist.json").then((r) => r.json() as Promise<Track[]>),
+        ]);
+        tracks = list;
+        index = (startIndex + from) % tracks.length;
+
+        /* Tells the home page's shuffle to stand down: from here on the deck
+           has to agree with what is playing, not with a fresh random pick. */
+        (window as any).__playerActive = true;
+        dock.hidden = false;
+        source.hidden = false;
+
+        await new Promise<void>((resolve) => {
+          api.createController(
+            embed,
+            { uri: `spotify:track:${tracks[index].i}`, width: "100%", height: "80" },
+            (ctrl: any) => {
+              controller = ctrl;
+
+              ctrl.addListener("playback_update", (event: any) => {
+                const data = event?.data;
+                if (!data || switching) return;
+
+                if (!scrubbing && typeof data.position === "number") {
+                  position = data.position / 1000;
+                  if (panel) {
+                    panel.seek.value = String(Math.round(position));
+                    panel.elapsed.textContent = clock(position);
+                  }
+                  setProgress();
+                }
+                if (typeof data.duration === "number" && data.duration > 0) {
+                  duration = data.duration / 1000;
+                  if (panel) {
+                    panel.seek.max = String(Math.round(duration));
+                    panel.duration.textContent = clock(duration);
+                  }
+                  /* duration moved, so the same position is a new fraction. */
+                  setProgress();
+
+                  /*
+                    The embed has no "track ended" event, so the end is inferred
+                    from the position reaching the duration. Somebody on a
+                    preview hits it at thirty seconds and somebody signed in to
+                    Premium hits it at the end of the song. Either way the next
+                    track follows, which is what makes it continuous for both.
+                  */
+                  if (data.position >= data.duration - 900 && data.position > 0) go(index + 1);
+                }
+                if (typeof data.isPaused === "boolean") setPaused(data.isPaused);
+              });
+
+              resolve();
+            },
+          );
+        });
+
+        if (panel) {
+          panel.prev.disabled = false;
+          panel.next.disabled = false;
+          panel.seek.disabled = false;
+        }
+        paint(tracks[index]);
+        controller.play();
+        setPaused(false);
+      } catch {
+        dockLabel.textContent = "Play";
+        if (panel) panel.label.textContent = "Play";
+        starting = false;
+        dock.hidden = true;
+        source.hidden = true;
+        return;
+      }
+      starting = false;
+    };
+
+    const toggle = () => {
+      if (!controller) return void start();
+      controller.togglePlay();
+      setPaused(!paused);
+    };
+
+    const back = () => {
+      /* Restart the current track first, then step back, which is what every
+         other transport control does and what a listener expects. */
+      if (position > 3) return void controller?.seek(0);
+      go(index - 1);
+    };
+
+    /* Dock listeners, bound once, because these nodes persist. Binding them per
+       navigation would stack a new handler on the same button every click. */
+    dockPlay.addEventListener("click", toggle);
+    dockPrev.addEventListener("click", back);
+    dockNext.addEventListener("click", () => go(index + 1));
+
+    /*
+      The home page's panel, rebound on every navigation.
+
+      astro:page-load fires on the first load and after every client-side swap,
+      which is the only hook that sees the new DOM. Everything here binds to
+      nodes that were created moments ago, so there is nothing to unbind.
+    */
+    const bindPanel = () => {
+      const queue = document.getElementById("player-queue") as HTMLUListElement | null;
+      if (!queue) {
+        panel = null;
+        return;
+      }
+
+      panel = {
+        art: $<HTMLImageElement>("player-art"),
+        track: $("player-track"),
+        artist: $("player-artist"),
+        seek: $<HTMLInputElement>("player-seek"),
+        elapsed: $("player-elapsed"),
+        duration: $("player-duration"),
+        play: $<HTMLButtonElement>("player-play"),
+        glyph: $("player-play-glyph"),
+        label: $("player-play-label"),
+        prev: $<HTMLButtonElement>("player-prev"),
+        next: $<HTMLButtonElement>("player-next"),
+        index: $("player-index"),
+        queue,
+        open: $<HTMLAnchorElement>("player-open"),
+        /* Read off the server-rendered list so the two cannot disagree when the
+           `listed` prop changes. */
+        rows: queue.children.length,
+        /*
+          Astro scopes the panel's styles with a data-astro-cid attribute, so a
+          rule written as .player__row compiles to .player__row[data-astro-cid].
+          Anything built with createElement is missing that attribute, every
+          scoped rule skips it, and the rebuilt rows come back with no layout
+          and native browser buttons for titles. It looks like the css broke;
+          the css is fine and the selector genuinely does not match.
+        */
+        cid: [...(queue.querySelector("li")?.attributes ?? [])]
+          .map((attribute) => attribute.name)
+          .find((name) => name.startsWith("data-astro-cid-")),
+      };
+
+      /*
+        The server-rendered rows carry an offset rather than an index, so a
+        click before the track list has loaded still means the right thing:
+        start playing, that many tracks along from where we are.
+      */
+      queue.querySelectorAll<HTMLButtonElement>("[data-jump]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const offset = Number(button.dataset.jump);
+          if (!tracks.length) return void start(offset);
+          go(index + offset);
+        });
+      });
+
+      panel.play.addEventListener("click", toggle);
+      panel.prev.addEventListener("click", back);
+      panel.next.addEventListener("click", () => go(index + 1));
+
+      panel.seek.addEventListener("input", () => {
+        scrubbing = true;
+        position = Number(panel!.seek.value);
+        setProgress();
+        panel!.elapsed.textContent = clock(position);
+      });
+
+      panel.seek.addEventListener("change", () => {
+        /* seek() takes seconds, which is the one unit mismatch in this API: the
+           position that arrives on playback_update is milliseconds. */
+        controller?.seek(Number(panel!.seek.value));
+        scrubbing = false;
+      });
+
+      /*
+        If something is already playing, the panel we just found is showing
+        whatever the server rendered, which is not it. Bring it up to date
+        rather than leaving two surfaces disagreeing.
+      */
+      if (tracks.length) {
+        panel.prev.disabled = false;
+        panel.next.disabled = false;
+        panel.seek.disabled = false;
+        paint(tracks[index]);
+        panel.seek.value = String(Math.round(position));
+        panel.elapsed.textContent = clock(position);
+        setProgress();
+        setPaused(paused);
+      }
+    };
+
+    bindPanel();
+    document.addEventListener("astro:page-load", bindPanel);
+  }
+</script>
+
+<style>
+  /*
+    A small window, parked out of the way, in the same costume as the rest of
+    the site: a border, a panel fill, and the same two colours doing the same
+    two jobs.
+
+    Fixed rather than sticky, because it has to sit above whatever page it is
+    on and outlive the scroll position of a page it is no longer on.
+
+    Its bottom clears the status bar, which is itself sticky at the foot of the
+    viewport, so the two never overlap.
+  */
+  .dock {
+    position: fixed;
+    right: var(--s4);
+    bottom: 3.25rem;
+    z-index: 80;
+    width: min(21rem, calc(100vw - var(--s8)));
+    border: 1px solid var(--amber-faint);
+    background: var(--bg-panel);
+  }
+
+  .dock[hidden] {
+    display: none;
+  }
+
+  /* The progress line, along the top edge of the window like a loading bar.
+     Amber, because it is something you read; the buttons below are the only
+     things here you can press, and they are the only blue. */
+  .dock__bar {
+    height: 2px;
+    background: var(--amber-ghost);
+  }
+
+  .dock__fill {
+    display: block;
+    height: 100%;
+    width: 0;
+    background: var(--amber-dim);
+  }
+
+  /* The same title bar the page wears, at dock scale. */
+  .dock__head {
+    display: flex;
+    align-items: center;
+    gap: var(--s2);
+    padding: var(--s2) var(--s2) var(--s2) var(--s3);
+    border-bottom: 1px solid var(--amber-ghost);
+    background: var(--bg);
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.08em;
+    color: var(--amber-dim);
+  }
+
+  .dock__min-meta {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .dock__label {
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dock__min-art,
+  .dock__min-artist {
+    display: none;
+  }
+
+  .dock--min .dock__min-art {
+    display: block;
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border: 1px solid var(--amber-ghost);
+    background: var(--bg-inset);
+  }
+
+  .dock--min .dock__min-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .dock--min .dock__label {
+    color: var(--amber-max);
+  }
+
+  .dock--min .dock__min-artist {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-body);
+    font-size: var(--text-micro);
+    letter-spacing: 0;
+    line-height: 1.2;
+    color: var(--amber-dim);
+  }
+
+  /* Spotify's attribution follows the embed: it is hidden while the panel is
+     open, because "playing via" and their player are both visible down there,
+     and it appears in the title bar when the panel is collapsed so the credit
+     never leaves the screen. */
+  .dock__via {
+    margin-left: auto;
+    white-space: nowrap;
+    color: var(--amber-faint);
+    display: none;
+  }
+
+  .dock--min .dock__via {
+    display: inline;
+  }
+
+  .dock__toggle {
+    margin-left: auto;
+    flex: 0 0 auto;
+    padding: 0 var(--s1);
+    border: 0;
+    background: none;
+    color: var(--blue);
+    font: inherit;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+
+  .dock--min .dock__toggle {
+    margin-left: 0;
+  }
+
+  .dock__toggle:hover {
+    color: var(--blue-hi);
+  }
+
+  .dock--min .dock__panel {
+    display: none;
+  }
+
+  .dock__body {
+    display: flex;
+    gap: var(--s3);
+    padding: var(--s3);
+  }
+
+  .dock__art {
+    flex: 0 0 auto;
+    width: 48px;
+    height: 48px;
+    /* The artwork is square and must not be cropped or distorted, so the box is
+       square too. Spotify's guidelines are explicit about not altering it. */
+    object-fit: cover;
+    border: 1px solid var(--amber-ghost);
+    background: var(--bg-inset);
+  }
+
+  .dock__meta {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s1);
+  }
+
+  /* Titles run long. Both lines clip rather than wrap, so the dock's height
+     never depends on which track is playing. */
+  .dock__track,
+  .dock__artist {
+    max-width: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .dock__track {
+    font-size: var(--text-sm);
+    color: var(--amber-max);
+  }
+
+  .dock__artist {
+    font-size: var(--text-micro);
+    font-family: var(--font-display);
+    letter-spacing: 0.04em;
+    color: var(--amber-dim);
+  }
+
+  .dock__controls {
+    display: flex;
+    align-items: center;
+    gap: var(--s1);
+    margin-top: var(--s1);
+  }
+
+  .dock__button,
+  .dock__home {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    padding: 2px var(--s2);
+    border: 1px solid var(--blue-dim);
+    background: var(--bg-inset);
+    color: var(--blue);
+    text-decoration: none;
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: background 90ms linear, border-color 90ms linear, color 90ms linear;
+  }
+
+  .dock__home {
+    margin-left: auto;
+  }
+
+  .dock__button:hover,
+  .dock__home:hover {
+    background: var(--blue-ghost);
+    border-color: var(--blue);
+    color: var(--blue-hi);
+  }
+
+  .dock__button:active,
+  .dock__home:active {
+    translate: 0 1px;
+  }
+
+  /*
+    Spotify's player, kept visible because their terms require it and framed as
+    what it is: the thing doing the playing, under a label. It cannot be hidden
+    or restyled, which is the reason this dock is a window rather than a strip.
+  */
+  .dock__source {
+    padding: 0 var(--s3) var(--s3);
+    border-top: 1px solid var(--amber-ghost);
+  }
+
+  .dock__source[hidden] {
+    display: none;
+  }
+
+  .dock__source-label {
+    margin: var(--s2) 0;
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.08em;
+    color: var(--amber-dim);
+  }
+
+  /* Touch targets get the room WCAG asks for without changing desktop density. */
+  @media (pointer: coarse) {
+    .dock__button,
+    .dock__home {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
+  /* On a phone the dock would cover the content it is floating over, so it
+     spans the width and sits flat against the foot of the viewport instead. */
+  @media (max-width: 30rem) {
+    .dock {
+      right: var(--s2);
+      left: var(--s2);
+      width: auto;
+    }
+  }
+
+  @media print {
+    .dock {
+      display: none !important;
+    }
+  }
+</style>
