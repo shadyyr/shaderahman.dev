@@ -805,11 +805,41 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
   /* Touch targets get the room WCAG asks for without changing desktop density. */
   @media (pointer: coarse) {
     .player__button {
-      min-height: 44px;
+      min-height: var(--tap);
     }
 
     .player__seek {
-      height: 44px;
+      height: var(--tap);
+    }
+
+    /*
+      The queue's own link idioms, finishing the tap-target pass.
+
+      global.css owns that pass and names two lists to extend, and these
+      belong to them: the row title is group one, the artist links are group
+      two. They are written here anyway, and the reason is specificity rather
+      than preference. Astro compiles this component's rules with its scoped
+      attribute, so `.player__row-play { padding: 0 }` above is two classes
+      deep and outranks anything global.css can say with one. The property
+      that has to be beaten lives here, so the rule that beats it lives here.
+
+      Measured at 375 before this existed: the home page carried 17 targets
+      under WCAG 2.5.8's 24px and every one of them was in this component. The
+      row title was 21px tall, the artist links 17px, in the deck and in all
+      six queue rows.
+
+      The tokens come from global.css. Using them rather than repeating 44px
+      is what keeps a second convention from starting here, which is how this
+      defect reached new code the first time.
+    */
+    .player__row-play {
+      min-height: var(--tap);
+    }
+
+    .player__artist a,
+    .player__row-artist a {
+      padding-block: var(--tap-pad);
+      line-height: 2;
     }
   }
 

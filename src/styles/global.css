@@ -100,6 +100,24 @@
 
   --sidebar-w: 15rem;
   --measure: 68ch; /* line length cap for prose */
+
+  /*
+    Touch targets. Two numbers, because they answer two different questions,
+    and both are only ever used inside `@media (pointer: coarse)` below.
+
+    --tap is the box a control has to fill: 44px, Apple's number, and WCAG
+    2.5.5 AAA. It goes on things that already own a box and can simply be made
+    taller, so the extra height costs nothing but height.
+
+    --tap-pad is what a link inside a sentence grows by instead. Those cannot
+    take --tap: an inline-block wide enough to hold "University of Central
+    Florida" cannot break across lines, so forcing one there pushes the page
+    sideways, which is the bug in M1 all over again. 4px a side clears WCAG
+    2.5.8 AA's 24px on every type size on this site (13px type measures 17px
+    tall, plus 8, is 25) without touching how the text wraps.
+  */
+  --tap: 2.75rem; /* 44px */
+  --tap-pad: 0.25rem; /* 4px a side */
 }
 
 /* ---------------------------------------------------------------- reset --- */
@@ -275,13 +293,41 @@ a:active {
   color: var(--amber-dim);
 }
 
+/*
+  This bar set the minimum width of the entire site, and the host is why.
+
+  Three flex children, none of which can break internally, and
+  `shaderahman.dev/experience` has no space in it, so its min-content width is
+  all 26 characters. That gave the bar a floor that grew with the path:
+  /experience 357px, /projects 341, /skills 326, all of them over a 320px
+  viewport, and all of them the bar alone. Nothing else on any page was close.
+
+  Dropping the host below 40rem leaves `/experience`, which is 11 characters,
+  and takes about 118px off the floor at a stroke. See OsLayout.astro for the
+  markup split. Rejected first: `min-width: 0` plus `text-overflow: ellipsis`
+  on the path. It works, but it truncates a real URL to "shaderahman.d..." on a
+  phone, which is a worse thing to show than the route on its own.
+*/
+@media (max-width: 40rem) {
+  .titlebar__host {
+    display: none;
+  }
+}
+
 /* Inert. These are drawn frame, not controls, so they get no hover state,
    no pointer cursor, no tab stop, and no announcement. A fake button that
-   does nothing is worse than an honest ornament. */
+   does nothing is worse than an honest ornament.
+
+   nowrap because this is ASCII art of a widget, and it is the one string on
+   the site where a line break is semantically wrong. Without it the three
+   glyphs broke apart at 375px and 393px and the bar grew from 34.6px to
+   69.8px, which is 35px of the roughly 300px of chrome that sat above the
+   heading on /experience. */
 .titlebar__glyphs {
   color: var(--amber-faint);
   letter-spacing: 0.1em;
   user-select: none;
+  white-space: nowrap;
 }
 
 /* Body: sidebar + content -------------------------------------------------- */
@@ -313,13 +359,32 @@ a:active {
   overflow-y: auto;
 }
 
+/*
+  Stacked, this sidebar is the largest single piece of chrome between the top
+  of a phone screen and the page heading. Measured at 375 it was 198.6px of a
+  282.8px run-up on the home page, on a device with about 555px visible in
+  Safari.
+
+  The vertical padding drops to --s3 while the inline padding stays at --s4.
+  Those are not the same job: the inline value has to agree with the title bar,
+  the status bar and .content, which all say --s4 at every width and all land
+  on one vertical line below 56rem. The vertical value has nothing to line up
+  against, which is the same reasoning .content's own padding-block already
+  uses one block down.
+
+  The gap between the two nav groups drops to --s4 as well. At --s6 it was
+  sized to separate two labelled groups; with the labels hidden it was the only
+  thing left doing the separating, and 16px still reads as a break between the
+  routes and the outbound links without spending 24.
+*/
 @media (max-width: 56rem) {
   .sidebar {
     position: static;
     max-height: none;
     border-right: 0;
     border-bottom: 1px solid var(--amber-ghost);
-    padding: var(--s4);
+    padding: var(--s3) var(--s4);
+    gap: var(--s4);
   }
 }
 
@@ -330,6 +395,27 @@ a:active {
   letter-spacing: 0.08em;
   color: var(--amber-dim);
   margin-bottom: var(--s2);
+}
+
+/*
+  Hidden on a phone for the same reason .sidebar__foot is, a few rules down:
+  it is decoration, and decoration is what a 375px screen has least room for.
+  The two labels cost 51.2px between them, 17.6px of text plus 8px of margin
+  each, out of a 198.6px sidebar.
+
+  Nothing is lost to assistive technology. Sidebar.astro marks both labels
+  aria-hidden already, because "cd" is not a useful thing to hear announced,
+  and the real accessible name sits on each list's aria-label ("Sections" and
+  "Elsewhere"). Verified in the built HTML, not assumed.
+
+  Stacked, the groups do not need them anyway: four internal routes on one row
+  and three outbound links under them, separated by the gap above, read as two
+  groups without being told they are.
+*/
+@media (max-width: 56rem) {
+  .navgroup__label {
+    display: none;
+  }
 }
 
 .navlist {
@@ -473,11 +559,26 @@ a:active {
   flex-wrap: wrap;
 }
 
-@media (max-width: 40rem) {
-  .statusbar__hints > *:nth-child(n + 3) {
-    display: none;
-  }
-}
+/*
+  The rule that drops all but the first two hints in a narrow window is NOT
+  here. It is in OsLayout.astro's scoped style, and it has to be.
+
+  It used to sit here, as `.statusbar__hints > *:nth-child(n + 3)`, and it was
+  dead. OsLayout scopes `html[data-js] .hint` to keep the hints hidden until
+  the script that honours them has run, and Astro compiles that to (0,3,1)
+  against this rule's (0,2,0). The pruning lost every cascade it entered, on
+  every page, for as long as JavaScript was on. Measured: 68.2px of status bar
+  at 375 and 101.8px at 320 with a fine pointer, two and three wrapped lines,
+  where 34.6px was intended.
+
+  Putting it back here at a higher specificity would work today and break again
+  the next time that scoped rule is edited, silently, exactly as it did the
+  first time. The two rules that fight belong within sight of each other.
+
+  Narrow width and touch are separate questions and are answered separately.
+  Width is that rule; pointer is the block below, which takes all five hints
+  away rather than two, because a phone has none of the keys they name.
+*/
 
 /*
   Every hint names a key, and the command palette they advertise opens only on
@@ -499,6 +600,70 @@ a:active {
 
   .statusbar {
     justify-content: flex-end;
+  }
+
+  /*
+    Tap targets, and this is the one block on the site where they are set.
+
+    Measured at 375 against WCAG 2.5.8's 24px, before this existed: /skills had
+    45 targets under it, / had 24, /projects 12, /experience 6, and the
+    smallest anywhere was 17px. Two groups, because the site has two kinds of
+    link and they cannot take the same fix.
+
+    Group one owns its box already, so it just gets taller. --tap is 44px.
+    .navlink earns that number more than anything else here: below 56rem the
+    nav stops being a column and becomes a wrapped row, and at 375 it does
+    wrap, so the site's only navigation was three rows of 28.8px targets 4px
+    apart. align-items has to be restated because .navlink sets baseline for
+    the column layout, and a baseline-aligned child of a 44px box sits at the
+    top of it with 15px of dead space underneath.
+
+    Group two is a link inside running text, where 44px is not available: an
+    inline-block cannot break across lines, so blockifying "University of
+    Central Florida" at 375px would push the page sideways. Padding grows an
+    inline box's hit area without touching how it wraps, and line-height keeps
+    the rows far enough apart that two links on consecutive lines do not
+    overlap each other. line-height: 2 covers every size on this site, since
+    2*size clears 1.3*size + 8px for anything above 11.4px and the smallest
+    type in this group is 13px.
+
+    ADD NEW LINK IDIOMS TO THESE TWO LISTS. This defect has already come back
+    once in newer code, and it comes back through a component that invents its
+    own link class and never looks here.
+
+    Two things this deliberately does not do.
+
+    No padding-inline in group two. It would fix the last two undersized
+    targets on the site, the pair of "BNY" evidence links, which come out
+    23.4px wide by 25px tall: short on width, not height, because the label is
+    three characters. The cost is that these links sit in a comma-separated run
+    and the comma is emitted immediately after the closing tag, so 4px of
+    trailing padding parks it a visible half-space off the Y. WCAG 2.5.8
+    exempts a target "in a sentence or its size is otherwise constrained by the
+    line-height of non-target text", which is precisely what these are, so the
+    trade buys nothing and costs the typography.
+
+    No rules for the player. Its queue rows and transport controls live in
+    PlayerDock.astro and PlaylistPanel.astro, they are a media transport rather
+    than a link, and its main buttons already measure 44px. The 13 remaining
+    under-24 targets on / are all in there and belong to that component.
+  */
+  .navlink,
+  .key,
+  .entry__links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tap);
+  }
+
+  .entry__org a,
+  .education__school a,
+  .skill__evidence a,
+  .collab a,
+  .more a,
+  .colophon a {
+    padding-block: var(--tap-pad);
+    line-height: 2;
   }
 }
 

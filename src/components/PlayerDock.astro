@@ -329,6 +329,50 @@
       setCollapsed(!dock.classList.contains("dock--min"));
     });
 
+    /*
+      Bottom clearance so the page's own content cannot end underneath the
+      dock. The dock is `position: fixed`, so nothing in normal document flow
+      reserves room for it; without this, the last card on a phone-width page
+      sits behind it permanently, in both the expanded and collapsed dock,
+      because the page simply runs out of scroll before the dock's footprint
+      does.
+
+      The number travels as a custom property on documentElement rather than
+      a state class, unlike `data-js` in the layout: a class is enough for a
+      yes/no fact, but the amount of clearance is a pixel figure that only
+      script can produce, since the dock's own rendered height depends on
+      collapse state and, briefly, on whether Spotify's iframe has finished
+      sizing itself.
+
+      Measured as window.innerHeight - rect.top rather than the dock's own
+      offsetHeight, because `.dock` sits `bottom: 3.25rem` clear of the
+      status bar, and that gap is part of the page's shadow too. Reading it
+      off the dock's actual position means that 3.25rem never has to be
+      copied here to go stale against the value in .dock's own rule.
+
+      A ResizeObserver rather than a call at every place `hidden` or
+      `dock--min` changes, because there is a case neither of those cover:
+      the iframe reports its real height to `.dock__source` asynchronously,
+      after `start()` has already unhidden the dock, so a measurement taken
+      at unhide time would be short by the embed's own height for as long as
+      Spotify takes to load. The observer catches that the moment it happens,
+      along with the hide, show and collapse cases, from one place instead of
+      four. `hidden` sets `display: none`, which the observer reports as a
+      resize to nothing, so the property drops back to 0 on its own.
+
+      window's resize is a separate trigger the observer cannot see: rotating
+      the phone changes window.innerHeight without changing the dock's own
+      box.
+    */
+    const dockSpace = () => {
+      const rect = dock.getBoundingClientRect();
+      const space = dock.hidden ? 0 : Math.max(0, window.innerHeight - rect.top);
+      document.documentElement.style.setProperty("--dock-space", `${Math.round(space)}px`);
+    };
+    new ResizeObserver(dockSpace).observe(dock);
+    window.addEventListener("resize", dockSpace);
+    dockSpace();
+
     /** Writes a track into both surfaces, whichever of them exist right now. */
     const paint = (track: Track) => {
       const art = track.a ? `https://i.scdn.co/image/${track.a}` : "";
@@ -916,12 +960,36 @@
     color: var(--amber-dim);
   }
 
-  /* Touch targets get the room WCAG asks for without changing desktop density. */
+  /*
+    Touch targets get the room WCAG asks for without changing desktop
+    density.
+
+    .dock__toggle was missing from this list. Measured at 375, 393 and 430 it
+    rendered 31 by 18px: under the 24px WCAG 2.5.8 minimum and well under the
+    44px Apple recommends, and worse than either number suggests, because
+    collapsed it is the only control the dock has. Everything else is clipped
+    to nothing at that point, so this is the one button that always has to be
+    reachable.
+
+    display: flex plus centering rides along with it, scoped to the same
+    query. The button has no such rule at desktop size because its content is
+    a couple of characters on one line and needs none; once min-height forces
+    the box taller than that line, something has to center the glyph in the
+    added space or it sits pinned to the top of a box that grew underneath
+    it.
+  */
   @media (pointer: coarse) {
     .dock__button,
-    .dock__home {
+    .dock__home,
+    .dock__toggle {
       min-height: 44px;
       min-width: 44px;
+    }
+
+    .dock__toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
   }
 
@@ -932,6 +1000,30 @@
       right: var(--s2);
       left: var(--s2);
       width: auto;
+    }
+
+    /*
+      At this width the dock above is no longer a small window tucked in a
+      corner, it spans the page, so whatever it is covering is genuinely
+      underneath it rather than beside it. Measured at 375 before this rule:
+      expanded, the dock covered .entry, an .entry__title and a link, 284px
+      of an 800px viewport; collapsed, at 57px, it still covered one card.
+
+      --dock-space is written by the script above, in pixels, and is 0 until
+      the dock is actually visible, so this only ever spends room on a
+      visitor who has pressed play.
+
+      :global(body), because the element that needs the room, <body>, belongs
+      to OsLayout, not to this component, and Astro's scoping would otherwise
+      rewrite `body` into a selector that can never match anything outside
+      this component's own template. body carries no padding-bottom of its
+      own today, so this adds a property rather than fighting one that
+      OsLayout or global.css already set, which is what keeps this a
+      one-line, one-direction dependency instead of two files needing to
+      agree on a number.
+    */
+    :global(body) {
+      padding-bottom: var(--dock-space, 0px);
     }
   }
 
