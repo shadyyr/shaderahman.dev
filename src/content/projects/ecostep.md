@@ -8,9 +8,9 @@ summary: >-
   claims, because working out which ones you qualify for means reading your own
   appliance labels and utility bills. EcoStep reads both from photos and
   returns a phased upgrade roadmap. The roadmap includes an **EcoScore out of
-  100** for how clean the home is currently and the rebates you actually
-  qualify for with payback maths run against **your own utility rate** rather
-  than a national average.
+  100** for how clean the home is currently. It also shows the rebates you
+  actually qualify for, with payback calculations based on **your own utility
+  rate** rather than a national average.
 tech:
   [
     "Next.js",
