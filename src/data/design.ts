@@ -2,8 +2,8 @@
  * The graphic design work, and the only hand-written half of it.
  *
  * Everything here is a fact about a piece that no script can read: what it is,
- * who it was for, and when. Everything measurable, the cover's dimensions and
- * how many slides a carousel runs to, is generated into design-assets.json by
+ * who it was for, and when. Everything measurable, the page dimensions and how
+ * many slides a carousel runs to, is generated into design-assets.json by
  * `npm run design` and merged in at build time. Keep the two halves separate:
  * a human fact that a script overwrites is a fact that goes stale silently.
  *
@@ -29,27 +29,31 @@ export type DesignPiece = {
   /** YYYY-MM. Sorting only, never rendered. */
   date: string;
   /**
-   * Fraction of the page height to keep, measured from the top. Only set where
-   * a cover carries something that should not be republished.
+   * The Instagram post this piece was published in, when there is one.
    *
-   * The DECA book's title page carries two such things below the product shot:
-   * a "prepared by" credit naming the classmate he worked with, and the high
-   * school's full street address. The credit is the reason this is 0.74 rather
-   * than the 0.805 that clears the address alone. She worked on the campaign,
-   * not on the design, and this is a design page, so printing her name here
-   * would credit her for the wrong thing.
+   * Optional on purpose: only some pieces were feed posts, and a title with no
+   * post renders as plain amber text rather than a blue link, because blue on
+   * this site means it goes somewhere. Never fill this in from a shortcode
+   * that looks right. Instagram is in the link checker's bot-hostile list, so
+   * "npm run links" skips these rather than verifying them, which makes a
+   * wrong one invisible to every gate the repo has.
    */
-  keepTop?: number;
+  post?: string;
   /**
-   * Regions to blur out, as fractions of the original page, applied before any
-   * keepTop crop so the numbers stay true to the source.
+   * Regions to fill with solid black, as fractions of the page they sit on.
+   * `page` is 1-based and matches the slide numbering the site shows.
    *
    * This exists because a poster can publish something the rest of the site
    * refuses to. `npm run audit` reads the built HTML and cannot see inside a
    * picture, so anything printed in the artwork gets exactly one review, and
-   * it is this one. Check a new piece for contact details before adding it.
+   * it is this one. Every page of every piece ships, not just the cover, so
+   * check all of them for contact details before adding a piece.
+   *
+   * Nothing is cropped. He asked for the whole page with a bar over the parts
+   * that cannot be republished, rather than a page cut short, because a cut
+   * page hides the composition along with the phone number.
    */
-  redact?: { left: number; top: number; width: number; height: number }[];
+  redact?: { page: number; left: number; top: number; width: number; height: number }[];
 };
 
 export const DESIGN: DesignPiece[] = [
@@ -59,6 +63,7 @@ export const DESIGN: DesignPiece[] = [
     title: "Knight Hacks IX announcement carousel",
     org: "Knight Hacks",
     date: "2026-08",
+    post: "https://www.instagram.com/p/DatBcDRGRsl/",
   },
   {
     slug: "knight-hacks-ix-flyer",
@@ -73,6 +78,7 @@ export const DESIGN: DesignPiece[] = [
     title: "Knight Hacks mentor applications",
     org: "Knight Hacks",
     date: "2026-08",
+    post: "https://www.instagram.com/p/Dcd9Q9WRqEX/",
   },
   {
     slug: "knight-hacks-volunteer-applications",
@@ -80,6 +86,7 @@ export const DESIGN: DesignPiece[] = [
     title: "Knight Hacks volunteer applications",
     org: "Knight Hacks",
     date: "2026-08",
+    post: "https://www.instagram.com/p/DcbaW_Lxlxy/",
   },
   {
     slug: "bsa-outreach-committee-banner",
@@ -94,6 +101,22 @@ export const DESIGN: DesignPiece[] = [
     title: "Mock Gaye Holud invitation",
     org: "Bengali Student Association",
     date: "2025-10",
+    /*
+      Page 6 thanks the event's sponsors by reproducing their business cards,
+      and two of those cards carry full contact blocks: a phone number, an
+      email and a street address each, one of the emails being a personal
+      Gmail rather than a company address.
+
+      Only the contact lines go under a bar. The logos, the trading names and
+      the people's names stay, because the page exists to thank them and a
+      sponsor blacked out entirely is not thanked at all. What is covered is
+      what a stranger could act on, which is the same line this site draws for
+      its owner: no phone number, and no email in the page source.
+    */
+    redact: [
+      { page: 6, left: 0.028, top: 0.735, width: 0.268, height: 0.05 },
+      { page: 6, left: 0.031, top: 0.845, width: 0.125, height: 0.104 },
+    ],
   },
   {
     slug: "bsa-mgh-spirit-week",
@@ -129,8 +152,13 @@ export const DESIGN: DesignPiece[] = [
       appears on it. The club's own Instagram post is theirs to publish and it
       scrolls away; a portfolio page is permanent and indexed, so it does not
       get to carry someone else's number by accident.
+
+      The bar covers all three lines rather than the middle one alone. Leaving
+      "venmo:" and "cashapp:" legible either side of a gap would advertise what
+      was taken out, and the handle on the third line is a person's, not the
+      club's.
     */
-    redact: [{ left: 0.03, top: 0.495, width: 0.36, height: 0.145 }],
+    redact: [{ page: 1, left: 0.04, top: 0.51, width: 0.365, height: 0.11 }],
   },
   {
     slug: "bsa-membership-form-banner",
@@ -173,6 +201,21 @@ export const DESIGN: DesignPiece[] = [
     title: "tarte integrated marketing campaign",
     org: "DECA",
     date: "2023-12",
-    keepTop: 0.74,
+    /*
+      The title page carries two things the rest of the site will not print.
+
+      The first is a "prepared by" credit naming the classmate he worked with.
+      She worked on the campaign, not on the design, and this is a design page,
+      so printing her name here would credit her for the wrong thing.
+
+      The second is the high school's full street address, which is a real
+      building a real person attended. The school's name goes under the same
+      bar as the address: separating them would leave the name sitting on top
+      of an obvious black box, which reads as a redaction of the name itself.
+    */
+    redact: [
+      { page: 1, left: 0.1, top: 0.74, width: 0.46, height: 0.052 },
+      { page: 1, left: 0.61, top: 0.856, width: 0.266, height: 0.092 },
+    ],
   },
 ];

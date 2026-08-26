@@ -6,7 +6,7 @@ import assets from "../data/design-assets.json";
 
 /*
   Two halves, joined here. The facts a script cannot read live in design.ts;
-  the measured ones, cover dimensions and slide counts, are generated into
+  the measured ones, page dimensions and slide counts, are generated into
   design-assets.json by `npm run design`. A piece with no generated half is
   dropped rather than rendered broken, which is what happens if someone adds an
   entry and forgets to rerun the script.
@@ -37,8 +37,7 @@ const isBanner = (ratio: number) => ratio >= 2;
       Most of this is for two organisations: the Bengali Student Association,
       where I ran marketing before becoming president, and Knight Hacks, where I
       design for UCF's hackathon. Event flyers, Instagram carousels, form
-      banners, and application graphics. Covers are shown here; the carousels
-      run to as many slides as their captions say.
+      banners, and application graphics. Open one to page through every slide.
     </p>
   </PageHead>
 
@@ -46,30 +45,187 @@ const isBanner = (ratio: number) => ratio >= 2;
     {
       pieces.map((piece) => (
         <li class:list={["piece", isBanner(piece.ratio) && "piece--wide"]}>
-          <a class="piece__link" href={piece.sources["1280"].file}>
+          {/*
+            A real link to the first page, so this works with JavaScript off:
+            the colophon promises the rest of the site does. The script below
+            intercepts the click and opens the viewer instead, and it leaves
+            modified clicks alone so "open in new tab" still does that.
+          */}
+          <a
+            class="piece__link"
+            href={piece.pages[0].file}
+            data-pages={piece.pages.map((p: any) => p.file).join(",")}
+            data-title={piece.title}
+          >
             <img
               class="piece__img"
-              src={piece.sources["640"].file}
-              srcset={`${piece.sources["640"].file} ${piece.sources["640"].width}w, ${piece.sources["1280"].file} ${piece.sources["1280"].width}w`}
+              src={piece.thumb.file}
+              srcset={`${piece.thumb.file} ${piece.thumb.width}w, ${piece.pages[0].file} ${piece.pages[0].width}w`}
               sizes="(min-width: 70rem) 22vw, (min-width: 40rem) 45vw, 92vw"
-              width={piece.sources["1280"].width}
-              height={piece.sources["1280"].height}
+              width={piece.pages[0].width}
+              height={piece.pages[0].height}
               style={`aspect-ratio: ${piece.ratio}`}
               alt={`${piece.title}, designed for ${piece.org}`}
               loading="lazy"
               decoding="async"
             />
-            <span class="piece__title">{piece.title}</span>
           </a>
-          <p class="piece__meta">
-            <span>{piece.org}</span>
-            {piece.slides > 1 && <span>{piece.slides} slides</span>}
-          </p>
+
+          {/*
+            Blue only when it goes somewhere. A piece with a post links its
+            title to Instagram; one without renders the same words as plain
+            amber text, because the palette rule here is that blue means
+            actionable and nothing else.
+          */}
+          {piece.post ? (
+            <a class="piece__title piece__title--link" href={piece.post}>
+              {piece.title}
+            </a>
+          ) : (
+            <span class="piece__title">{piece.title}</span>
+          )}
+
+          <p class="piece__org">{piece.org}</p>
+          {piece.slides > 1 && <p class="piece__slides">{piece.slides} slides</p>}
         </li>
       ))
     }
   </ul>
+
+  {/*
+    One viewer for the whole page, filled on open, rather than sixteen dialogs
+    sitting in the DOM holding markup nobody has asked for yet.
+
+    A real <dialog> rather than a div with a high z-index. showModal() brings
+    the backdrop, the focus trap, inertness for everything behind it and
+    Escape-to-close with no code, and every one of those is a thing a
+    hand-rolled overlay gets wrong.
+  */}
+  <dialog class="viewer" id="viewer" aria-label="Design viewer">
+    <figure class="viewer__frame">
+      <img class="viewer__img" id="viewer-img" alt="" />
+      <figcaption class="viewer__bar">
+        <span class="viewer__label" id="viewer-label" />
+        <span class="viewer__count" id="viewer-count" />
+      </figcaption>
+    </figure>
+
+    <button class="viewer__close" id="viewer-close" type="button" aria-label="Close viewer">
+      <span aria-hidden="true">&#215;</span>
+    </button>
+    <button class="viewer__step viewer__step--prev" id="viewer-prev" type="button" aria-label="Previous slide">
+      <span aria-hidden="true">&#8249;</span>
+    </button>
+    <button class="viewer__step viewer__step--next" id="viewer-next" type="button" aria-label="Next slide">
+      <span aria-hidden="true">&#8250;</span>
+    </button>
+  </dialog>
 </OsLayout>
+
+<script>
+  /*
+    The viewer, and the one thing about this site that decides whether it keeps
+    working: ClientRouter replaces the whole document on every navigation, and
+    a module script runs once for the visit rather than once per page. So every
+    element here is looked up fresh inside setup(), and setup() runs again on
+    astro:page-load. A reference captured at module scope points at a detached
+    node after the first client-side navigation, and the failure is silent:
+    clicking does nothing and nothing appears in the console. That exact shape
+    of bug has already been fixed twice in this repo.
+
+    Listeners go on elements that are themselves replaced by the swap, never on
+    document, so re-running setup() cannot stack duplicates: the old elements
+    are garbage along with their handlers.
+  */
+  function setup() {
+    const dialog = document.getElementById("viewer") as HTMLDialogElement | null;
+    if (!dialog) return;
+
+    const img = document.getElementById("viewer-img") as HTMLImageElement;
+    const label = document.getElementById("viewer-label") as HTMLElement;
+    const count = document.getElementById("viewer-count") as HTMLElement;
+    const prev = document.getElementById("viewer-prev") as HTMLButtonElement;
+    const next = document.getElementById("viewer-next") as HTMLButtonElement;
+    const close = document.getElementById("viewer-close") as HTMLButtonElement;
+
+    let pages: string[] = [];
+    let title = "";
+    let index = 0;
+    let opener: HTMLElement | null = null;
+
+    /* Wraps in both directions. At the end of a seven slide carousel the next
+       arrow going back to the first slide is friendlier than a dead control,
+       and there is nowhere else for it to go. */
+    const show = (to: number) => {
+      index = (to + pages.length) % pages.length;
+      img.src = pages[index];
+      img.alt = `${title}, slide ${index + 1} of ${pages.length}`;
+      count.textContent = pages.length > 1 ? `${index + 1} / ${pages.length}` : "";
+    };
+
+    for (const link of document.querySelectorAll<HTMLAnchorElement>("[data-pages]")) {
+      link.addEventListener("click", (event) => {
+        /* A middle click, or any modifier, is someone asking for a new tab.
+           Hijacking that is the rudest thing an overlay can do. */
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+        event.preventDefault();
+
+        pages = (link.dataset.pages ?? "").split(",").filter(Boolean);
+        if (!pages.length) return;
+        title = link.dataset.title ?? "";
+        label.textContent = title;
+        opener = link;
+
+        /* A single page piece has nothing to step through, so the arrows go
+           rather than sit there disabled. A control that cannot do anything is
+           still a promise the interface is making. */
+        const many = pages.length > 1;
+        prev.hidden = !many;
+        next.hidden = !many;
+
+        show(0);
+        dialog.showModal();
+      });
+    }
+
+    prev.addEventListener("click", () => show(index - 1));
+    next.addEventListener("click", () => show(index + 1));
+    close.addEventListener("click", () => dialog.close());
+
+    /* Arrow keys, because anyone given left and right controls will try them.
+       Escape is already handled by showModal() and needs nothing here. */
+    dialog.addEventListener("keydown", (event) => {
+      if (pages.length < 2) return;
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        show(index - 1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        show(index + 1);
+      }
+    });
+
+    /* Clicking the backdrop closes. The dialog's own box is the backdrop as
+       far as the event target goes, so this fires only outside .viewer__frame,
+       and the guard keeps a click on the picture from closing it. */
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+
+    /* Focus goes back where it came from. Without this it lands on <body> and
+       a keyboard reader loses their place in a grid of sixteen. */
+    dialog.addEventListener("close", () => {
+      opener?.focus();
+      /* Dropped so a closed viewer is not holding the last image in memory,
+         and so a reopen cannot flash the previous piece before the new one
+         decodes. */
+      img.removeAttribute("src");
+    });
+  }
+
+  setup();
+  document.addEventListener("astro:page-load", setup);
+</script>
 
 <style>
   /*
@@ -104,7 +260,6 @@ const isBanner = (ratio: number) => ratio >= 2;
 
   .piece__link {
     display: block;
-    text-decoration: none;
   }
 
   .piece__img {
@@ -115,30 +270,164 @@ const isBanner = (ratio: number) => ratio >= 2;
     background: var(--bg-inset);
   }
 
-  /* Blue, because the whole card opens the full-size cover and the palette
-     rule is that anything actionable is blue. The underline goes on hover and
-     focus rather than sitting under every title, which at sixteen of them
-     would read as a page of links rather than a page of work. */
   .piece__title {
     display: block;
     margin-top: var(--s3);
-    color: var(--blue);
     font-size: var(--text-sm);
+    color: var(--amber);
   }
 
-  .piece__link:hover .piece__title,
-  .piece__link:focus-visible .piece__title {
+  /* Only the linked ones are blue, and only they carry the underline on hover.
+     A title with no post behind it stays amber and inert. */
+  .piece__title--link {
+    color: var(--blue);
+    text-decoration: none;
+  }
+
+  .piece__title--link:hover,
+  .piece__title--link:focus-visible {
     text-decoration: underline;
   }
 
-  .piece__meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--s1) var(--s3);
+  /* The organisation and the slide count are separate lines, not a wrapped
+     row. They answer different questions and reading "Knight Hacks 7 slides"
+     as one run made the count look like part of the client's name. */
+  .piece__org,
+  .piece__slides {
     margin-top: var(--s1);
     font-family: var(--font-display);
     font-size: var(--text-micro);
     letter-spacing: 0.08em;
     color: var(--amber-dim);
+  }
+
+  /* ------------------------------------------------------------- viewer -- */
+
+  .viewer {
+    max-width: 100%;
+    max-height: 100%;
+    width: 100%;
+    height: 100%;
+    padding: var(--s6);
+    border: 0;
+    background: none;
+    overflow: hidden;
+  }
+
+  /* Darker than the page rather than a wash of colour over it. The point is
+     that everything behind stops competing with the picture. */
+  .viewer::backdrop {
+    background: rgb(0 0 0 / 0.82);
+  }
+
+  .viewer__frame {
+    margin: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--s3);
+  }
+
+  /*
+    The picture is bounded by the frame rather than by its own dimensions, so a
+    3240px tall carousel page and a 400px tall banner both land inside the
+    window without either being scaled up past what was rendered.
+  */
+  .viewer__img {
+    max-width: 100%;
+    max-height: calc(100% - 3rem);
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border: 1px solid var(--amber-faint);
+    background: var(--bg-inset);
+  }
+
+  .viewer__bar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: baseline;
+    gap: var(--s2) var(--s4);
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.08em;
+    color: var(--amber-dim);
+  }
+
+  /*
+    Controls are chrome, so they are amber, and they are the exception that
+    proves the palette rule rather than a break in it: blue marks a link to
+    somewhere else, and none of these leave the page.
+  */
+  .viewer__close,
+  .viewer__step {
+    position: fixed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: var(--tap);
+    min-height: var(--tap);
+    padding: 0;
+    border: 1px solid var(--amber-faint);
+    background: var(--bg-panel);
+    color: var(--amber-hi);
+    font-family: var(--font-display);
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .viewer__close:hover,
+  .viewer__step:hover,
+  .viewer__close:focus-visible,
+  .viewer__step:focus-visible {
+    border-color: var(--amber);
+    color: var(--amber-max);
+  }
+
+  .viewer__close {
+    top: var(--s4);
+    right: var(--s4);
+    font-size: 1.5rem;
+  }
+
+  /* Vertically centred against the window rather than the picture, so they do
+     not move as slides of different heights come and go. */
+  .viewer__step {
+    top: 50%;
+    translate: 0 -50%;
+    font-size: 2rem;
+  }
+
+  .viewer__step--prev {
+    left: var(--s4);
+  }
+
+  .viewer__step--next {
+    right: var(--s4);
+  }
+
+  .viewer__step[hidden] {
+    display: none;
+  }
+
+  /* On a phone the arrows would sit on top of the picture at any useful size,
+     so they move under it and the picture gets the width back. */
+  @media (max-width: 40rem) {
+    .viewer {
+      padding: var(--s4) var(--s2);
+    }
+
+    .viewer__step {
+      top: auto;
+      bottom: var(--s4);
+      translate: none;
+    }
+
+    .viewer__img {
+      max-height: calc(100% - 7rem);
+    }
   }
 </style>
