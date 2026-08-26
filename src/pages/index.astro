@@ -97,30 +97,47 @@ const buildDate = new Date().toISOString().slice(0, 10);
         is legs. I still hate leg day, and that'll never change.
       </p>
 
+      <p class="split__intro">
+        I have run a few different splits, push pull legs among them, and upper
+        lower is the one that actually fits the week I have, so it is what I
+        train now. How I train inside it has changed too. I used to do three
+        sets of everything without thinking about it, and I would now rather do
+        fewer sets and put more into each one. Most of what changed my mind
+        there came from <a href="https://www.youtube.com/@JeffNippard">Jeff
+        Nippard</a> and{" "}
+        <a href="https://www.tiktok.com/@jacoboestreichercoaching">
+          Jacob Oestreicher
+        </a>.
+      </p>
+
       <div class="split">
         {
           TRAINING_SPLIT.map((block) => (
-            <article class="split__day">
+            <article
+              class:list={["split__day", block.exercises.length === 0 && "split__day--rest"]}
+            >
               <h3 class="split__name">
                 <span>{block.name}</span>
                 <span class="split__when">{block.day}</span>
               </h3>
-              <table class="split__table">
-                <thead>
-                  <tr>
-                    <th scope="col">exercise</th>
-                    <th scope="col">sets x reps</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {block.exercises.map((exercise) => (
+              {block.exercises.length > 0 && (
+                <table class="split__table">
+                  <thead>
                     <tr>
-                      <th scope="row">{exercise.name}</th>
-                      <td>{exercise.sets}</td>
+                      <th scope="col">exercise</th>
+                      <th scope="col">sets x reps</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {block.exercises.map((exercise) => (
+                      <tr>
+                        <th scope="row">{exercise.name}</th>
+                        <td>{exercise.sets}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
             </article>
           ))
         }
@@ -283,14 +300,22 @@ const buildDate = new Date().toISOString().slice(0, 10);
   }
 
   /*
-    The copy above the split keeps the 68ch measure, and should. It sits
-    outside any box, so there is no card edge for a line to stop against, which
-    is the case §23 deliberately carves out. The cards below are boxes and the
-    global .entry rule handles them.
+    Nothing here sets a width, and that is now the whole story: text fills its
+    container everywhere on this site. This block is the reason the old 68ch
+    cap came out, having shipped at 612px inside the 1054px it had.
   */
   .split__intro {
-    margin-bottom: var(--s6);
     color: var(--amber);
+  }
+
+  .split__intro + .split__intro {
+    margin-top: var(--s4);
+  }
+
+  /* The gap belongs to the last paragraph rather than to every one of them, so
+     adding a third does not need this touched. */
+  .split__intro:last-of-type {
+    margin-bottom: var(--s6);
   }
 
   /*
@@ -336,6 +361,29 @@ const buildDate = new Date().toISOString().slice(0, 10);
   }
 
   .split__when {
+    color: var(--amber-dim);
+  }
+
+  /*
+    Rest days run the full width of the grid and carry no table, so the week
+    reads as three bands rather than as a 2x2 of training days with the days
+    off left out. 1 / -1 spans whatever the column count happens to be, so this
+    is the same rule at one column as at two, and the array order in site.ts is
+    what puts Wednesday between the pairs.
+
+    Thinner than a training card because there is nothing in it to read: the
+    padding drops to --s3, and the title row gives up the rule and the space
+    under it, both of which exist to separate a heading from a table that is
+    not here.
+  */
+  .split__day--rest {
+    grid-column: 1 / -1;
+    padding-block: var(--s3);
+  }
+
+  .split__day--rest .split__name {
+    padding-bottom: 0;
+    border-bottom: 0;
     color: var(--amber-dim);
   }
 
@@ -386,11 +434,11 @@ const buildDate = new Date().toISOString().slice(0, 10);
     white-space: nowrap;
   }
 
-  /* Full width of the panel, via the "a box is never capped" rule in
-     global.css. This was two columns for a while, which kept every line inside
-     the measure; he looked at it and wanted the paragraph running the full
-     width of the box instead, and then wanted the same everywhere, which is
-     what put that rule in global.css rather than here. */
+  /* Full width of the panel, because nothing caps text on this site any more.
+     This was two columns for a while, which kept every line short; he looked
+     at it and wanted the paragraph running the full width of the box instead,
+     and then wanted the same everywhere. That produced the opt-out rule in
+     global.css first, and eventually removed the cap altogether. */
   .colophon p {
     color: var(--amber-dim);
     font-size: var(--text-sm);
