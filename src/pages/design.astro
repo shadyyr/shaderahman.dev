@@ -1,0 +1,144 @@
+---
+import OsLayout from "../layouts/OsLayout.astro";
+import PageHead from "../components/PageHead.astro";
+import { DESIGN } from "../data/design";
+import assets from "../data/design-assets.json";
+
+/*
+  Two halves, joined here. The facts a script cannot read live in design.ts;
+  the measured ones, cover dimensions and slide counts, are generated into
+  design-assets.json by `npm run design`. A piece with no generated half is
+  dropped rather than rendered broken, which is what happens if someone adds an
+  entry and forgets to rerun the script.
+*/
+const pieces = DESIGN.filter((piece) => piece.slug in assets)
+  .map((piece) => ({ ...piece, ...(assets as Record<string, any>)[piece.slug] }))
+  .sort((a, b) => b.date.localeCompare(a.date));
+
+const missing = DESIGN.filter((piece) => !(piece.slug in assets)).map((p) => p.slug);
+if (missing.length) {
+  console.warn(`[design] no generated assets for: ${missing.join(", ")}. Run npm run design.`);
+}
+
+/* A banner is far wider than it is tall and looks absurd in a portrait cell,
+   so it takes the full row instead. 2 is well clear of the 1.04 the widest
+   non-banner piece measures. */
+const isBanner = (ratio: number) => ratio >= 2;
+---
+
+<OsLayout
+  title="Design"
+  description="Graphic design for the Bengali Student Association and Knight Hacks: event flyers, Instagram carousels, banners, and application graphics."
+  path="/design"
+  crumbs={[{ name: "Design", path: "/design" }]}
+>
+  <PageHead eyebrow="Made things" heading="Design">
+    <p class="pagehead__lede">
+      Most of this is for two organisations: the Bengali Student Association,
+      where I ran marketing before becoming president, and Knight Hacks, where I
+      design for UCF's hackathon. Event flyers, Instagram carousels, form
+      banners, and application graphics. Covers are shown here; the carousels
+      run to as many slides as their captions say.
+    </p>
+  </PageHead>
+
+  <ul class="gallery">
+    {
+      pieces.map((piece) => (
+        <li class:list={["piece", isBanner(piece.ratio) && "piece--wide"]}>
+          <a class="piece__link" href={piece.sources["1280"].file}>
+            <img
+              class="piece__img"
+              src={piece.sources["640"].file}
+              srcset={`${piece.sources["640"].file} ${piece.sources["640"].width}w, ${piece.sources["1280"].file} ${piece.sources["1280"].width}w`}
+              sizes="(min-width: 70rem) 22vw, (min-width: 40rem) 45vw, 92vw"
+              width={piece.sources["1280"].width}
+              height={piece.sources["1280"].height}
+              style={`aspect-ratio: ${piece.ratio}`}
+              alt={`${piece.title}, designed for ${piece.org}`}
+              loading="lazy"
+              decoding="async"
+            />
+            <span class="piece__title">{piece.title}</span>
+          </a>
+          <p class="piece__meta">
+            <span>{piece.org}</span>
+            {piece.slides > 1 && <span>{piece.slides} slides</span>}
+          </p>
+        </li>
+      ))
+    }
+  </ul>
+</OsLayout>
+
+<style>
+  /*
+    Ratios here run from 0.56 on a story post to 4.0 on a form banner, so
+    nothing is cropped to a common shape: each cover keeps its own aspect ratio
+    and the row is as tall as its tallest member. Cropping a designer's
+    compositions to tidy up a grid would be the wrong trade on this page in
+    particular.
+
+    16rem rather than the 24rem the other grids use, because these are images
+    rather than blocks of text: the floor is about how small a cover can get
+    and still read, not about a line length. It gives three columns at the
+    widest the content column gets and collapses to one on a phone. The min()
+    is the same load-bearing guard as everywhere else, without which minmax
+    treats the floor as hard and the grid hangs off the side of a narrow
+    screen.
+  */
+  .gallery {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    gap: var(--s6);
+    grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr));
+    align-items: start;
+  }
+
+  /* A 4:1 banner in a portrait cell would be a sliver with a lot of air around
+     it. Full width is closer to how it is actually used. */
+  .piece--wide {
+    grid-column: 1 / -1;
+  }
+
+  .piece__link {
+    display: block;
+    text-decoration: none;
+  }
+
+  .piece__img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--amber-ghost);
+    background: var(--bg-inset);
+  }
+
+  /* Blue, because the whole card opens the full-size cover and the palette
+     rule is that anything actionable is blue. The underline goes on hover and
+     focus rather than sitting under every title, which at sixteen of them
+     would read as a page of links rather than a page of work. */
+  .piece__title {
+    display: block;
+    margin-top: var(--s3);
+    color: var(--blue);
+    font-size: var(--text-sm);
+  }
+
+  .piece__link:hover .piece__title,
+  .piece__link:focus-visible .piece__title {
+    text-decoration: underline;
+  }
+
+  .piece__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s1) var(--s3);
+    margin-top: var(--s1);
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    letter-spacing: 0.08em;
+    color: var(--amber-dim);
+  }
+</style>

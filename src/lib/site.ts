@@ -214,6 +214,7 @@ export const ROUTES = [
   { path: "/", label: "home", title: "Home", key: "h" },
   { path: "/experience", label: "experience", title: "Experience", key: "e" },
   { path: "/projects", label: "projects", title: "Projects", key: "p" },
+  { path: "/design", label: "design", title: "Design", key: "d" },
   { path: "/skills", label: "skills", title: "Skills", key: "s" },
 ] as const;
 
