@@ -34,10 +34,11 @@ const isBanner = (ratio: number) => ratio >= 2;
 >
   <PageHead eyebrow="Made things" heading="Design">
     <p class="pagehead__lede">
-      Most of this is for two organisations: the Bengali Student Association,
+      Most of these are from two organizations: the Bengali Student Association,
       where I ran marketing before becoming president, and Knight Hacks, where I
-      design for UCF's hackathon. Event flyers, Instagram carousels, form
-      banners, and application graphics. Open one to page through every slide.
+      design graphics for their annual hackathon. Designs include event flyers,
+      Instagram carousels, form banners, and application graphics. Open one of
+      the designs to page through every slide.
     </p>
   </PageHead>
 
@@ -102,23 +103,34 @@ const isBanner = (ratio: number) => ratio >= 2;
     hand-rolled overlay gets wrong.
   */}
   <dialog class="viewer" id="viewer" aria-label="Design viewer">
-    <figure class="viewer__frame">
-      <img class="viewer__img" id="viewer-img" alt="" />
+    <figure class="viewer__stage">
+      {/*
+        The controls live inside this box, not in the dialog, and that is the
+        whole mechanism. .viewer__frame shrink-wraps whatever picture is in it,
+        so positioning the buttons against it puts them beside the artwork
+        rather than out at the window's edges. A 4:1 banner and a tall story
+        post are wildly different sizes and both get their arrows exactly one
+        gutter from their own edge, with no measuring in script.
+      */}
+      <div class="viewer__frame">
+        <img class="viewer__img" id="viewer-img" alt="" />
+
+        <button class="viewer__close" id="viewer-close" type="button" aria-label="Close viewer">
+          <span aria-hidden="true">&#215;</span>
+        </button>
+        <button class="viewer__step viewer__step--prev" id="viewer-prev" type="button" aria-label="Previous slide">
+          <span aria-hidden="true">&#8249;</span>
+        </button>
+        <button class="viewer__step viewer__step--next" id="viewer-next" type="button" aria-label="Next slide">
+          <span aria-hidden="true">&#8250;</span>
+        </button>
+      </div>
+
       <figcaption class="viewer__bar">
         <span class="viewer__label" id="viewer-label" />
         <span class="viewer__count" id="viewer-count" />
       </figcaption>
     </figure>
-
-    <button class="viewer__close" id="viewer-close" type="button" aria-label="Close viewer">
-      <span aria-hidden="true">&#215;</span>
-    </button>
-    <button class="viewer__step viewer__step--prev" id="viewer-prev" type="button" aria-label="Previous slide">
-      <span aria-hidden="true">&#8249;</span>
-    </button>
-    <button class="viewer__step viewer__step--next" id="viewer-next" type="button" aria-label="Next slide">
-      <span aria-hidden="true">&#8250;</span>
-    </button>
   </dialog>
 </OsLayout>
 
@@ -205,11 +217,23 @@ const isBanner = (ratio: number) => ratio >= 2;
       }
     });
 
-    /* Clicking the backdrop closes. The dialog's own box is the backdrop as
-       far as the event target goes, so this fires only outside .viewer__frame,
-       and the guard keeps a click on the picture from closing it. */
+    /*
+      Anywhere in the dark closes it.
+
+      Testing for `event.target === dialog` is the obvious version and it is
+      wrong here: the stage fills the dialog, so a click on what looks like
+      bare backdrop actually lands on the stage and the dialog never sees
+      itself as the target. Asking whether the click was inside the picture's
+      own box is the question that was always meant, and it keeps working
+      however the layers inside change.
+
+      The caption is excluded too. It sits outside the frame, and closing the
+      viewer because someone clicked the title of the thing they are looking at
+      would read as a bug.
+    */
     dialog.addEventListener("click", (event) => {
-      if (event.target === dialog) dialog.close();
+      const target = event.target as HTMLElement;
+      if (!target.closest(".viewer__frame, .viewer__bar")) dialog.close();
     });
 
     /* Focus goes back where it came from. Without this it lands on <body> and
@@ -303,12 +327,20 @@ const isBanner = (ratio: number) => ratio >= 2;
 
   /* ------------------------------------------------------------- viewer -- */
 
+  /*
+    --gutter is the one number this viewer runs on. It reserves the space, in
+    the dialog's padding, and it places every control, in the offsets below, so
+    the two can never drift apart. 44px of control plus 12px of air is what
+    puts a button clear of the artwork without it floating off on its own.
+  */
   .viewer {
+    --gutter: calc(var(--tap) + var(--s3));
+
     max-width: 100%;
     max-height: 100%;
     width: 100%;
     height: 100%;
-    padding: var(--s6);
+    padding: var(--gutter);
     border: 0;
     background: none;
     overflow: hidden;
@@ -320,7 +352,7 @@ const isBanner = (ratio: number) => ratio >= 2;
     background: rgb(0 0 0 / 0.82);
   }
 
-  .viewer__frame {
+  .viewer__stage {
     margin: 0;
     height: 100%;
     display: flex;
@@ -331,16 +363,39 @@ const isBanner = (ratio: number) => ratio >= 2;
   }
 
   /*
-    The picture is bounded by the frame rather than by its own dimensions, so a
-    3240px tall carousel page and a 400px tall banner both land inside the
-    window without either being scaled up past what was rendered.
+    Shrink-wrapped to the picture. inline-block rather than a flex or grid
+    child, because those stretch to their container and this has to be exactly
+    as wide as the image currently is, whatever that turns out to be.
+
+    line-height: 0 because an inline-block otherwise reserves a few pixels of
+    descender space under the image, and the close button is positioned off
+    this box's edges: a phantom strip at the bottom would make the offsets
+    quietly asymmetric.
+  */
+  .viewer__frame {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    line-height: 0;
+  }
+
+  /*
+    Bounded by the window rather than by its own dimensions, so a 4320px tall
+    carousel page and a 400px tall banner both land inside without either being
+    scaled up past what was rendered.
+
+    Two gutters for the dialog's own padding, then 4rem for the caption and the
+    gap above it. dvh is declared second so browsers that have it use the real
+    visible height, and the ones that do not fall back to vh rather than to
+    nothing.
   */
   .viewer__img {
+    display: block;
     max-width: 100%;
-    max-height: calc(100% - 3rem);
+    max-height: calc(100vh - (2 * var(--gutter)) - 4rem);
+    max-height: calc(100dvh - (2 * var(--gutter)) - 4rem);
     width: auto;
     height: auto;
-    object-fit: contain;
     border: 1px solid var(--amber-faint);
     background: var(--bg-inset);
   }
@@ -362,9 +417,17 @@ const isBanner = (ratio: number) => ratio >= 2;
     proves the palette rule rather than a break in it: blue marks a link to
     somewhere else, and none of these leave the page.
   */
+  /*
+    Absolute against .viewer__frame, so every offset below is measured from the
+    picture's own edge rather than the window's.
+
+    Controls are chrome, so they are amber, and they are the exception that
+    proves the palette rule rather than a break in it: blue marks a link to
+    somewhere else, and none of these leave the page.
+  */
   .viewer__close,
   .viewer__step {
-    position: fixed;
+    position: absolute;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -387,47 +450,76 @@ const isBanner = (ratio: number) => ratio >= 2;
     color: var(--amber-max);
   }
 
+  /* Directly above the picture's top-right corner. `bottom: 100%` is the
+     picture's top edge, so the gap is the same --s3 the arrows use. */
   .viewer__close {
-    top: var(--s4);
-    right: var(--s4);
+    bottom: calc(100% + var(--s3));
+    right: 0;
     font-size: 1.5rem;
   }
 
-  /* Vertically centred against the window rather than the picture, so they do
-     not move as slides of different heights come and go. */
+  /* Centred on the picture, not on the window, so a short banner gets its
+     arrows level with itself instead of stranded halfway down the screen. */
   .viewer__step {
     top: 50%;
     translate: 0 -50%;
     font-size: 2rem;
   }
 
+  /* right: 100% is the picture's left edge, left: 100% its right edge, so both
+     arrows sit one --s3 clear of the artwork whatever size it is. */
   .viewer__step--prev {
-    left: var(--s4);
+    right: calc(100% + var(--s3));
   }
 
   .viewer__step--next {
-    right: var(--s4);
+    left: calc(100% + var(--s3));
   }
 
   .viewer__step[hidden] {
     display: none;
   }
 
-  /* On a phone the arrows would sit on top of the picture at any useful size,
-     so they move under it and the picture gets the width back. */
+  /*
+    On a phone a gutter either side would cost 112px of a 375px screen, which
+    is most of what the artwork needs. The arrows drop under the picture and
+    line up with its own left and right edges, so they still belong to it, and
+    the picture gets the full width back.
+  */
   @media (max-width: 40rem) {
     .viewer {
-      padding: var(--s4) var(--s2);
+      padding: var(--gutter) var(--s3) calc(var(--gutter) + 2.5rem);
     }
 
     .viewer__step {
-      top: auto;
-      bottom: var(--s4);
+      top: calc(100% + var(--s3));
       translate: none;
     }
 
+    .viewer__step--prev {
+      right: auto;
+      left: 0;
+    }
+
+    .viewer__step--next {
+      left: auto;
+      right: 0;
+    }
+
     .viewer__img {
-      max-height: calc(100% - 7rem);
+      max-height: calc(100vh - 13rem);
+      max-height: calc(100dvh - 13rem);
+    }
+
+    /*
+      The arrows are out of flow, so the caption rides up into the same band
+      and sits between them, which is a good use of the height a phone does not
+      have to spare. It only works while the caption stays clear of them: this
+      reserves an arrow's width at each end so a long title wraps instead of
+      running underneath one.
+    */
+    .viewer__bar {
+      padding-inline: calc(var(--tap) + var(--s3));
     }
   }
 </style>
