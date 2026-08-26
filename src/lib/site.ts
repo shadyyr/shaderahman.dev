@@ -124,8 +124,14 @@ export const AWARDS = [
 ] as const;
 
 /**
- * The training split on the home page. Four days: upper and lower on Monday
- * and Tuesday, then the second pair on Thursday and Friday.
+ * The training split on the home page. Four training days, upper and lower on
+ * Monday and Tuesday and the second pair on Thursday and Friday, with the
+ * three rest days sitting between them in the same array.
+ *
+ * The rest days are entries rather than a separate list, so the week reads in
+ * order from the data alone and the template never has to know where Wednesday
+ * belongs. A rest day is an entry with no exercises, which is what the page
+ * branches on.
  *
  * Transcribed from his own sheet, lowercase and all, because that is how he
  * writes it and this site renders text as authored. "12-failure" means the set
@@ -163,6 +169,11 @@ export const TRAINING_SPLIT = [
     ],
   },
   {
+    name: "rest",
+    day: "wed",
+    exercises: [],
+  },
+  {
     name: "upper b",
     day: "thu",
     exercises: [
@@ -185,6 +196,16 @@ export const TRAINING_SPLIT = [
       { name: "calf raises", sets: "2 x 12-failure" },
       { name: "ab crunch machine", sets: "2 x 10-15" },
     ],
+  },
+  {
+    name: "rest",
+    day: "sat",
+    exercises: [],
+  },
+  {
+    name: "rest",
+    day: "sun",
+    exercises: [],
   },
 ] as const;
 

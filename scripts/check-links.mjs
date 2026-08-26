@@ -39,6 +39,16 @@ const BOT_HOSTILE = [
   { host: "linkedin.com", note: "returns 999 to any non-browser client" },
   { host: "instagram.com", note: "login wall for logged-out clients" },
   { host: "x.com", note: "blocks unauthenticated clients" },
+  /*
+    403s this checker while serving the page normally. Verified by hand at the
+    time it was added: the profile returned 200 to a request carrying a real
+    browser User-Agent, and the page itself is client-rendered, so there is no
+    server-side title to assert against either. Listed here rather than left to
+    fail, because a 403 from a host that blocks bots on principle says nothing
+    about whether the link is good, and a checker that calls it DEAD is how you
+    get trained into deleting working links.
+  */
+  { host: "tiktok.com", note: "403s non-browser clients" },
 ];
 
 if (!existsSync(DIST)) {
