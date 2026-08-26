@@ -16,6 +16,11 @@ pnpm-debug.log*
 .env.production
 .env.local
 
+# Design sources. The originals live in Drive and stay there: this folder is
+# 187MB of print-resolution PDF and PNG, and only the optimised derivatives
+# under public/design/ belong in git.
+art/design/
+
 # macOS / Windows cruft
 .DS_Store
 Thumbs.db
