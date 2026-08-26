@@ -890,10 +890,13 @@
   }
 
   /* Titles run long. Both lines clip rather than wrap, so the dock's height
-     never depends on which track is playing. */
+     never depends on which track is playing.
+
+     These carried `max-width: none` to defeat the global 68ch cap on p. That
+     cap is gone, so the override went with it rather than staying on as a
+     local patch implying a rule that no longer exists. */
   .dock__track,
   .dock__artist {
-    max-width: none;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
