@@ -160,64 +160,48 @@ const isBanner = (ratio: number) => ratio >= 2;
     const next = document.getElementById("viewer-next") as HTMLButtonElement;
     const close = document.getElementById("viewer-close") as HTMLButtonElement;
 
-    /*
-      Every slide in the gallery, flattened in the order the grid shows them,
-      so the arrows walk off the end of one piece and into the next.
-
-      They used to stop at the edges of whichever piece was open, and half this
-      gallery is a single page: eight of the sixteen pieces had no arrows at
-      all, which read as broken rather than as "there is nothing here to page
-      to". Carrying on into the next design gives every piece its arrows back
-      and turns the viewer into a way through the whole collection.
-
-      The caption still counts within the piece, so slide 3 of a 6 page deck
-      says 3 / 6 and not 34 / 65. Crossing a boundary swaps the title, which is
-      what tells you that you have moved on to a different design.
-    */
-    type Slide = { file: string; title: string; at: number; of: number };
-    const slides: Slide[] = [];
-    const opensAt = new Map<HTMLAnchorElement, number>();
-
-    for (const link of document.querySelectorAll<HTMLAnchorElement>("[data-pages]")) {
-      const files = (link.dataset.pages ?? "").split(",").filter(Boolean);
-      if (!files.length) continue;
-      opensAt.set(link, slides.length);
-      const title = link.dataset.title ?? "";
-      files.forEach((file, i) => slides.push({ file, title, at: i + 1, of: files.length }));
-    }
-
+    let pages: string[] = [];
+    let title = "";
     let index = 0;
     let opener: HTMLElement | null = null;
 
-    /* Wraps in both directions. At the last slide of the last piece the next
-       arrow returning to the first is friendlier than a dead control, and
-       there is nowhere else for it to go. */
+    /* Wraps within the piece. At the end of a seven slide carousel the next
+       arrow going back to the first slide is friendlier than a dead control,
+       and there is nowhere else for it to go: the viewer shows one design at a
+       time and does not run on into the next one. */
     const show = (to: number) => {
-      if (!slides.length) return;
-      index = (to + slides.length) % slides.length;
-      const slide = slides[index];
-      img.src = slide.file;
-      img.alt = `${slide.title}, slide ${slide.at} of ${slide.of}`;
-      label.textContent = slide.title;
-      count.textContent = slide.of > 1 ? `${slide.at} / ${slide.of}` : "";
+      if (!pages.length) return;
+      index = (to + pages.length) % pages.length;
+      img.src = pages[index];
+      img.alt = `${title}, slide ${index + 1} of ${pages.length}`;
+      count.textContent = pages.length > 1 ? `${index + 1} / ${pages.length}` : "";
     };
 
-    /* One slide in the whole gallery would make both arrows pointless. That
-       cannot happen with sixteen pieces in it, but the viewer should not
-       depend on the content to be correct. */
-    const many = slides.length > 1;
-    prev.hidden = !many;
-    next.hidden = !many;
-
-    for (const [link, first] of opensAt) {
+    for (const link of document.querySelectorAll<HTMLAnchorElement>("[data-pages]")) {
       link.addEventListener("click", (event) => {
         /* A middle click, or any modifier, is someone asking for a new tab.
            Hijacking that is the rudest thing an overlay can do. */
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
 
+        pages = (link.dataset.pages ?? "").split(",").filter(Boolean);
+        if (!pages.length) return;
+        title = link.dataset.title ?? "";
+        label.textContent = title;
         opener = link;
-        show(first);
+
+        /*
+          A single page piece has nothing to step through, so the arrows go
+          rather than sit there disabled. A control that cannot do anything is
+          still a promise the interface is making.
+
+          Half this gallery is one page, so this is the common case rather than
+          an edge one, and the absence is the correct answer rather than a
+          missing feature: there is no second slide to reach.
+        */
+        const many = pages.length > 1;
+        prev.hidden = !many;
+        next.hidden = !many;
 
         /* Measured while the scrollbar is still there, which is the only
            moment its width can be read. The CSS above spends it as padding so
@@ -225,6 +209,7 @@ const isBanner = (ratio: number) => ratio >= 2;
         const bar = window.innerWidth - document.documentElement.clientWidth;
         document.documentElement.style.setProperty("--scrollbar-width", `${bar}px`);
 
+        show(0);
         dialog.showModal();
       });
     }
@@ -236,7 +221,7 @@ const isBanner = (ratio: number) => ratio >= 2;
     /* Arrow keys, because anyone given left and right controls will try them.
        Escape is already handled by showModal() and needs nothing here. */
     dialog.addEventListener("keydown", (event) => {
-      if (slides.length < 2) return;
+      if (pages.length < 2) return;
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         show(index - 1);
