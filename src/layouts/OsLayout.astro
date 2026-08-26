@@ -99,7 +99,20 @@ const windowPath = route ? path : title;
       <footer class="statusbar">
         <div class="statusbar__hints">
           <span class="hint"><kbd>/</kbd> commands</span>
-          <span class="hint"><kbd>H E P S</kbd> jump</span>
+          {/*
+            Derived from ROUTES rather than typed out. It read "H E P S" long
+            after /design shipped with "d": the shortcut worked and the status
+            bar quietly did not say so, because adding a route updated the one
+            and not the other. Now a new route advertises itself.
+
+            The capitals come from toUpperCase at build time, which puts real
+            characters in the HTML, and not from text-transform, which the
+            audit fails and which would be lossy. Same thing the command
+            palette does with the same keys.
+          */}
+          <span class="hint">
+            <kbd>{ROUTES.map((route) => route.key.toUpperCase()).join(" ")}</kbd> jump
+          </span>
           <span class="hint"><kbd>G</kbd> GitHub</span>
           <span class="hint"><kbd>L</kbd> LinkedIn</span>
           <span class="hint"><kbd>R</kbd> résumé</span>
