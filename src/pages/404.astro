@@ -13,10 +13,14 @@ import { ROUTES } from "../lib/site";
   <PageHead eyebrow="Error 404" heading="No such path" />
 
   <div class="stack">
-    <pre class="dump" aria-label="Terminal error output"><code>&gt; open <span class="dump__path" id="bad-path">the requested path</span>
-  status : 404
-  reason : no route matches
-  action : pick one of the four below</code></pre>
+    {/*
+      One span per line, and they have to stay written end to end with no
+      whitespace between them. Inside a pre, the newline separating two tags is
+      a real text node, so putting these on separate source lines would render
+      a blank line between each of them once they are display: block. Do not
+      let a formatter break this apart.
+    */}
+    <pre class="dump" aria-label="Terminal error output"><code><span class="dump__line">&gt; open <span class="dump__path" id="bad-path">the requested path</span></span><span class="dump__line">  status : 404</span><span class="dump__line">  reason : no route matches</span><span class="dump__line">  action : pick one of the four below</span></code></pre>
 
     <nav aria-label="Available pages">
       <ul class="routes">
@@ -46,12 +50,33 @@ import { ROUTES } from "../lib/site";
 </script>
 
 <style>
+  /*
+    The dump wraps rather than scrolling sideways, so it stops at the same edge
+    every other block on this page stops at.
+
+    It used to be plain `pre` with `overflow-x: auto`, and at 320px the longest
+    line ran 288.6px inside a 283px content box, so "below" was cut in half at
+    the border while the heading, the route list and the note beside it all sat
+    inside 286px. The scroll container was hiding it rather than solving it: a
+    reader at that width saw a truncated word, not a scrollbar to drag.
+
+    The first line is not fixed copy, which is what rules out simply sizing the
+    box to fit. It echoes location.pathname, so its length is whatever was
+    typed, and a long enough path overflows any width chosen here. pre-wrap
+    plus overflow-wrap keeps that case inside the box too, and a terminal
+    wrapping a line it cannot fit is the more faithful behaviour anyway.
+
+    overflow-x is gone with it. With wrapping on, nothing can overflow, so the
+    property could no longer fire and a rule that cannot fire is worse than no
+    rule: it reads as protection that is not there.
+  */
   .dump {
     border: 1px solid var(--amber-faint);
     border-left: 2px solid var(--red);
     background: var(--bg-inset);
     padding: var(--s4);
-    overflow-x: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
     color: var(--amber-dim);
     font-size: var(--text-sm);
     line-height: 1.7;
@@ -63,6 +88,26 @@ import { ROUTES } from "../lib/site";
     padding: 0;
     color: inherit;
     font-size: inherit;
+  }
+
+  /*
+    A hanging indent, so a line too long for the box carries on underneath its
+    own value instead of restarting at the left edge. Without it "below" landed
+    in column 0 at 320px and read as a fifth line of output rather than as the
+    rest of the fourth.
+
+    11ch is the width of the label column: "  action : " and "  status : " are
+    both exactly 11 characters, so a wrapped line resumes directly under where
+    the value started. The same 11ch already sets the route column below, in a
+    monospace block where a character is the unit that means something.
+
+    Only the first line of a block takes text-indent, which is why each line is
+    its own block above rather than one run of preformatted text.
+  */
+  .dump__line {
+    display: block;
+    padding-left: 11ch;
+    text-indent: -11ch;
   }
 
   .dump__path {
