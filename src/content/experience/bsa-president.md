@@ -10,6 +10,7 @@ summary: >-
   people, fifteen events, one academic year.
 bullets:
   - "Leading a **9-person** board, delegating across marketing, events, and operations to execute **15** planned events for the 2026–2027 academic year."
+  - "Grew the club's Instagram to **196K+** monthly views and **838** new followers in a single month by leading a full content-strategy overhaul, with a **157.6%** reach increase and **1,661** interactions."
   - "Directing club operations end to end, covering multicultural events, membership initiatives, and club sales and fundraising, to promote Bengali culture on campus."
 tags:
   - { name: "Leadership", starred: true }
