@@ -1,21 +1,10 @@
 ---
-import { getCollection } from "astro:content";
 import OsLayout from "../layouts/OsLayout.astro";
 import PageHead from "../components/PageHead.astro";
-import ProjectEntry from "../components/ProjectEntry.astro";
 import ExternalKey from "../components/ExternalKey.astro";
 import PlaylistPanel from "../components/PlaylistPanel.astro";
-import { SITE } from "../lib/site";
+import { SITE, TRAINING_SPLIT } from "../lib/site";
 import { findResume } from "../lib/resume";
-import { byRecency } from "../lib/format";
-
-const experience = (await getCollection("experience"))
-  .filter((entry) => !entry.data.draft)
-  .sort((a, b) => byRecency(a.data, b.data));
-
-const featured = (await getCollection("projects"))
-  .filter((entry) => !entry.data.draft && entry.data.featured)
-  .sort((a, b) => b.data.date.localeCompare(a.data.date));
 
 const resume = findResume();
 
@@ -98,21 +87,45 @@ const buildDate = new Date().toISOString().slice(0, 10);
 
     <PlaylistPanel />
 
-    {
-      featured.length > 0 && (
-        <section aria-labelledby="featured-heading">
-          <h2 class="section-title" id="featured-heading">Selected work</h2>
-          <ul class="entries">
-            {featured.map((entry) => (
-              <ProjectEntry entry={entry} compact level={3} />
-            ))}
-          </ul>
-          <p class="more">
-            <a href="/projects">Everything else →</a>
-          </p>
-        </section>
-      )
-    }
+    <section aria-labelledby="split-heading">
+      <h2 class="section-title" id="split-heading">Gym split</h2>
+
+      <p class="split__intro">
+        Staying consistent at the gym is something I struggled with for most of
+        my life. Summer 2025 is when that changed: I decided to stay consistent
+        for my health, and this time it stuck. Now I love it. The one exception
+        is legs. I still hate leg day, and that'll never change.
+      </p>
+
+      <div class="split">
+        {
+          TRAINING_SPLIT.map((block) => (
+            <article class="split__day">
+              <h3 class="split__name">
+                <span>{block.name}</span>
+                <span class="split__when">{block.day}</span>
+              </h3>
+              <table class="split__table">
+                <thead>
+                  <tr>
+                    <th scope="col">exercise</th>
+                    <th scope="col">sets x reps</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {block.exercises.map((exercise) => (
+                    <tr>
+                      <th scope="row">{exercise.name}</th>
+                      <td>{exercise.sets}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </article>
+          ))
+        }
+      </div>
+    </section>
 
     <section class="panel panel--plain colophon" aria-labelledby="colophon-heading">
       <h2 class="panel__title" id="colophon-heading">Colophon</h2>
@@ -269,9 +282,108 @@ const buildDate = new Date().toISOString().slice(0, 10);
     flex-basis: 100%;
   }
 
-  .more {
-    margin-top: var(--s4);
+  /*
+    The copy above the split keeps the 68ch measure, and should. It sits
+    outside any box, so there is no card edge for a line to stop against, which
+    is the case §23 deliberately carves out. The cards below are boxes and the
+    global .entry rule handles them.
+  */
+  .split__intro {
+    margin-bottom: var(--s6);
+    color: var(--amber);
+  }
+
+  /*
+    Four cards: two up at desktop width, one up on a phone.
+
+    24rem is the floor .categories uses on /skills, for both of its reasons.
+    The min() is load-bearing on phones, because minmax treats a bare 24rem as
+    a hard floor and the grid hangs off the side of anything narrower. And
+    24rem is also what holds this to two columns at the widest the content
+    column gets: a third would need about 1152px against the roughly 1050
+    available, and three columns would strand the fourth day alone on its own
+    row, which is the same thing that put two columns on the skills page.
+  */
+  .split {
+    display: grid;
+    gap: var(--s6);
+    grid-template-columns: repeat(auto-fit, minmax(min(24rem, 100%), 1fr));
+  }
+
+  /* The same border, background and padding as .entry, deliberately: these are
+     the same kind of card as the ones on /projects and /experience, and a
+     second card treatment on one site would be a second convention. */
+  .split__day {
+    border: 1px solid var(--amber-ghost);
+    border-left: 2px solid var(--amber-faint);
+    background: var(--bg-panel);
+    padding: var(--s5);
+  }
+
+  /* The block name and its weekday at opposite ends of a rule, the way the
+     colophon's meta row anchors both of its ends. 11px because Departure Mono
+     is drawn for multiples of 11, and because this is a label rather than a
+     heading anyone reads as prose. */
+  .split__name {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--s3);
+    padding-bottom: var(--s3);
+    border-bottom: 1px solid var(--amber-faint);
+    font-size: var(--text-micro);
+    letter-spacing: 0.08em;
+  }
+
+  .split__when {
+    color: var(--amber-dim);
+  }
+
+  .split__table {
+    width: 100%;
+    border-collapse: collapse;
     font-size: var(--text-sm);
+  }
+
+  .split__table th,
+  .split__table td {
+    text-align: left;
+    vertical-align: baseline;
+  }
+
+  /* Kept from his sheet rather than dropped as decoration. Each card is its own
+     table, and a table that never says what its columns are is a worse table to
+     land in with a screen reader. 11px dim, like every other meta label here. */
+  .split__table thead th {
+    padding: var(--s3) 0 var(--s2);
+    font-family: var(--font-display);
+    font-size: var(--text-micro);
+    font-weight: 400;
+    letter-spacing: 0.08em;
+    color: var(--amber-dim);
+  }
+
+  /* scope="row", so the exercise name is the row's header rather than one more
+     cell. The weight is reset because a th is bold by default and these are the
+     card's body, not headings inside it. */
+  .split__table tbody th {
+    padding: var(--s2) var(--s4) var(--s2) 0;
+    font-weight: 400;
+    color: var(--amber);
+  }
+
+  .split__table tbody td {
+    padding: var(--s2) 0;
+    color: var(--amber-dim);
+  }
+
+  /* Both the heading and the values sit against the card's own right edge,
+     which is what makes the column scannable. nowrap because "2 x 12-failure"
+     is a single value and a break inside it reads as two of them. */
+  .split__table thead th:last-child,
+  .split__table tbody td {
+    text-align: right;
+    white-space: nowrap;
   }
 
   /* Full width of the panel, via the "a box is never capped" rule in
