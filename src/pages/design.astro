@@ -160,42 +160,71 @@ const isBanner = (ratio: number) => ratio >= 2;
     const next = document.getElementById("viewer-next") as HTMLButtonElement;
     const close = document.getElementById("viewer-close") as HTMLButtonElement;
 
-    let pages: string[] = [];
-    let title = "";
+    /*
+      Every slide in the gallery, flattened in the order the grid shows them,
+      so the arrows walk off the end of one piece and into the next.
+
+      They used to stop at the edges of whichever piece was open, and half this
+      gallery is a single page: eight of the sixteen pieces had no arrows at
+      all, which read as broken rather than as "there is nothing here to page
+      to". Carrying on into the next design gives every piece its arrows back
+      and turns the viewer into a way through the whole collection.
+
+      The caption still counts within the piece, so slide 3 of a 6 page deck
+      says 3 / 6 and not 34 / 65. Crossing a boundary swaps the title, which is
+      what tells you that you have moved on to a different design.
+    */
+    type Slide = { file: string; title: string; at: number; of: number };
+    const slides: Slide[] = [];
+    const opensAt = new Map<HTMLAnchorElement, number>();
+
+    for (const link of document.querySelectorAll<HTMLAnchorElement>("[data-pages]")) {
+      const files = (link.dataset.pages ?? "").split(",").filter(Boolean);
+      if (!files.length) continue;
+      opensAt.set(link, slides.length);
+      const title = link.dataset.title ?? "";
+      files.forEach((file, i) => slides.push({ file, title, at: i + 1, of: files.length }));
+    }
+
     let index = 0;
     let opener: HTMLElement | null = null;
 
-    /* Wraps in both directions. At the end of a seven slide carousel the next
-       arrow going back to the first slide is friendlier than a dead control,
-       and there is nowhere else for it to go. */
+    /* Wraps in both directions. At the last slide of the last piece the next
+       arrow returning to the first is friendlier than a dead control, and
+       there is nowhere else for it to go. */
     const show = (to: number) => {
-      index = (to + pages.length) % pages.length;
-      img.src = pages[index];
-      img.alt = `${title}, slide ${index + 1} of ${pages.length}`;
-      count.textContent = pages.length > 1 ? `${index + 1} / ${pages.length}` : "";
+      if (!slides.length) return;
+      index = (to + slides.length) % slides.length;
+      const slide = slides[index];
+      img.src = slide.file;
+      img.alt = `${slide.title}, slide ${slide.at} of ${slide.of}`;
+      label.textContent = slide.title;
+      count.textContent = slide.of > 1 ? `${slide.at} / ${slide.of}` : "";
     };
 
-    for (const link of document.querySelectorAll<HTMLAnchorElement>("[data-pages]")) {
+    /* One slide in the whole gallery would make both arrows pointless. That
+       cannot happen with sixteen pieces in it, but the viewer should not
+       depend on the content to be correct. */
+    const many = slides.length > 1;
+    prev.hidden = !many;
+    next.hidden = !many;
+
+    for (const [link, first] of opensAt) {
       link.addEventListener("click", (event) => {
         /* A middle click, or any modifier, is someone asking for a new tab.
            Hijacking that is the rudest thing an overlay can do. */
         if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
         event.preventDefault();
 
-        pages = (link.dataset.pages ?? "").split(",").filter(Boolean);
-        if (!pages.length) return;
-        title = link.dataset.title ?? "";
-        label.textContent = title;
         opener = link;
+        show(first);
 
-        /* A single page piece has nothing to step through, so the arrows go
-           rather than sit there disabled. A control that cannot do anything is
-           still a promise the interface is making. */
-        const many = pages.length > 1;
-        prev.hidden = !many;
-        next.hidden = !many;
+        /* Measured while the scrollbar is still there, which is the only
+           moment its width can be read. The CSS above spends it as padding so
+           the page does not lurch when the scrollbar goes. */
+        const bar = window.innerWidth - document.documentElement.clientWidth;
+        document.documentElement.style.setProperty("--scrollbar-width", `${bar}px`);
 
-        show(0);
         dialog.showModal();
       });
     }
@@ -207,7 +236,7 @@ const isBanner = (ratio: number) => ratio >= 2;
     /* Arrow keys, because anyone given left and right controls will try them.
        Escape is already handled by showModal() and needs nothing here. */
     dialog.addEventListener("keydown", (event) => {
-      if (pages.length < 2) return;
+      if (slides.length < 2) return;
       if (event.key === "ArrowLeft") {
         event.preventDefault();
         show(index - 1);
@@ -247,7 +276,19 @@ const isBanner = (ratio: number) => ratio >= 2;
     });
   }
 
-  setup();
+  /*
+    Bound only from the event, never called directly here as well.
+
+    astro:page-load fires on the first load too, not just after a client-side
+    navigation, so calling setup() at module scope on top of it ran the whole
+    thing twice over the same elements and gave every card two click handlers.
+
+    That was invisible until the scrollbar width had to be measured. The first
+    handler measured it correctly and opened the dialog; the second then ran
+    against an already-open dialog, where the scrollbar is gone, measured 0 and
+    overwrote the good value. The page kept its 15px lurch and the number that
+    was supposed to prevent it read 0px.
+  */
   document.addEventListener("astro:page-load", setup);
 </script>
 
@@ -350,6 +391,35 @@ const isBanner = (ratio: number) => ratio >= 2;
      that everything behind stops competing with the picture. */
   .viewer::backdrop {
     background: rgb(0 0 0 / 0.82);
+  }
+
+  /*
+    The page behind must not scroll while the viewer is open. showModal() makes
+    everything behind it inert, which stops clicks and tab stops, but it does
+    nothing about scrolling: a wheel over the backdrop still drags the document
+    around underneath the picture.
+
+    Driven off the DOM with :has() rather than a class added from script, and
+    that is the point rather than a flourish. ClientRouter replaces every
+    attribute on documentElement on navigation, so a class put there by script
+    is dropped by the next swap, which is exactly how data-js and --dock-space
+    both went missing. A selector cannot go stale that way: it reads the state
+    that is actually there.
+
+    Hiding the overflow also takes the scrollbar away, which hands its width
+    back to the layout and shoves the page sideways at the moment the viewer
+    appears. The padding puts that width back.
+
+    scrollbar-gutter: stable was tried first and does nothing here: it reserves
+    space for a scrollbar that could appear, and `overflow: hidden` is the one
+    value where none ever can. Measured, the page still gained its 15px. The
+    real width is whatever this browser and OS use, so it is measured on open
+    rather than guessed at, and it is the one number here that script has to
+    supply.
+  */
+  :global(html:has(.viewer[open])) {
+    overflow: hidden;
+    padding-right: var(--scrollbar-width, 0px);
   }
 
   .viewer__stage {
