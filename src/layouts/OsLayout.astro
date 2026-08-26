@@ -173,7 +173,25 @@ const windowPath = route ? path : title;
 
         So: one interval, and the element is looked up fresh on each tick.
       */
-      document.documentElement.setAttribute("data-js", "");
+      /*
+        Re-applied after every swap rather than set once, and that is a fix
+        rather than a precaution. ClientRouter copies the incoming document's
+        <html> attributes over the live element, and `data-js` is only ever
+        added at runtime, so it is never present in the HTML being swapped in
+        and every navigation dropped it. The five keyboard hints are gated on
+        it and disappeared on the first click, while the clock, gated on
+        nothing, went on ticking beside them.
+
+        astro:after-swap, not astro:page-load: it fires while the new page is
+        in the DOM but before it paints, so the hints never flash hidden.
+
+        Anything else put on documentElement needs the same treatment. The
+        dock's --dock-space is the other one, and it is handled in PlayerDock
+        for the same reason.
+      */
+      const enableJs = () => document.documentElement.setAttribute("data-js", "");
+      enableJs();
+      document.addEventListener("astro:after-swap", enableJs);
 
       const tick = () => {
         const clock = document.getElementById("clock");
