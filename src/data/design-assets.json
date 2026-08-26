@@ -1,0 +1,290 @@
+{
+  "knight-hacks-ix-carousel": {
+    "slides": 7,
+    "width": 2375,
+    "height": 3166,
+    "ratio": 0.7502,
+    "sources": {
+      "640": {
+        "file": "/design/knight-hacks-ix-carousel-640.webp",
+        "width": 640,
+        "height": 853
+      },
+      "1280": {
+        "file": "/design/knight-hacks-ix-carousel-1280.webp",
+        "width": 1280,
+        "height": 1706
+      }
+    }
+  },
+  "knight-hacks-ix-flyer": {
+    "slides": 1,
+    "width": 1080,
+    "height": 1440,
+    "ratio": 0.75,
+    "sources": {
+      "640": {
+        "file": "/design/knight-hacks-ix-flyer-640.webp",
+        "width": 640,
+        "height": 853
+      },
+      "1280": {
+        "file": "/design/knight-hacks-ix-flyer-1280.webp",
+        "width": 1080,
+        "height": 1440
+      }
+    }
+  },
+  "knight-hacks-mentor-applications": {
+    "slides": 1,
+    "width": 1080,
+    "height": 1350,
+    "ratio": 0.8,
+    "sources": {
+      "640": {
+        "file": "/design/knight-hacks-mentor-applications-640.webp",
+        "width": 640,
+        "height": 800
+      },
+      "1280": {
+        "file": "/design/knight-hacks-mentor-applications-1280.webp",
+        "width": 1080,
+        "height": 1350
+      }
+    }
+  },
+  "knight-hacks-volunteer-applications": {
+    "slides": 1,
+    "width": 1080,
+    "height": 1350,
+    "ratio": 0.8,
+    "sources": {
+      "640": {
+        "file": "/design/knight-hacks-volunteer-applications-640.webp",
+        "width": 640,
+        "height": 800
+      },
+      "1280": {
+        "file": "/design/knight-hacks-volunteer-applications-1280.webp",
+        "width": 1080,
+        "height": 1350
+      }
+    }
+  },
+  "bsa-outreach-committee-banner": {
+    "slides": 1,
+    "width": 1600,
+    "height": 400,
+    "ratio": 4,
+    "sources": {
+      "640": {
+        "file": "/design/bsa-outreach-committee-banner-640.webp",
+        "width": 640,
+        "height": 160
+      },
+      "1280": {
+        "file": "/design/bsa-outreach-committee-banner-1280.webp",
+        "width": 1280,
+        "height": 320
+      }
+    }
+  },
+  "bsa-mock-gaye-holud": {
+    "slides": 6,
+    "width": 2375,
+    "height": 2968,
+    "ratio": 0.8002,
+    "sources": {
+      "640": {
+        "file": "/design/bsa-mock-gaye-holud-640.webp",
+        "width": 640,
+        "height": 800
+      },
+      "1280": {
+        "file": "/design/bsa-mock-gaye-holud-1280.webp",
+        "width": 1280,
+        "height": 1600
+      }
+    }
+  },
+  "bsa-mgh-spirit-week": {
+    "slides": 6,
+    "width": 3240,
+    "height": 4050,
+    "ratio": 0.8,
+    "sources": {
+      "640": {
+        "file": "/design/bsa-mgh-spirit-week-640.webp",
+        "width": 640,
+        "height": 800
+      },
+      "1280": {
+        "file": "/design/bsa-mgh-spirit-week-1280.webp",
+        "width": 1280,
+        "height": 1600
+      }
+    }
+  },
+  "bsa-gbm-1": {
+    "slides": 1,
+    "width": 1080,
+    "height": 1350,
+    "ratio": 0.8,
+    "sources": {
+      "640": {
+        "file": "/design/bsa-gbm-1-640.webp",
+        "width": 640,
+        "height": 800
+      },
+      "1280": {
+        "file": "/design/bsa-gbm-1-1280.webp",
+        "width": 1080,
+        "height": 1350
+      }
+    }
+  },
+  "bsa-opening-knight-2025": {
+    "slides": 1,
+    "width": 1080,
+    "height": 1350,
+    "ratio": 0.8,
+    "sources": {
+      "640": {
+        "file": "/design/bsa-opening-knight-2025-640.webp",
+        "width": 640,
+        "height": 800
+      },
+      "1280": {
+        "file": "/design/bsa-opening-knight-2025-1280.webp",
+        "width": 1080,
+        "height": 1350
+      }
+    }
+  },
+  "bsa-membership-flyer": {
+    "slides": 1,
+    "width": 1080,
+    "height": 1350,
+    "ratio": 0.8,
+    "sources": {
+      "640": {
+        "file": "/design/bsa-membership-flyer-640.webp",
+        "width": 640,
+        "height": 800
+      },
+      "1280": {
+        "file": "/design/bsa-membership-flyer-1280.webp",
+        "width": 1080,
+        "height": 1350
+      }
+    }
+  },
+  "bsa-membership-form-banner": {
+    "slides": 1,
+    "width": 1600,
+    "height": 400,
+    "ratio": 4,
+    "sources": {
+      "640": {
+        "file": "/design/bsa-membership-form-banner-640.webp",
+        "width": 640,
+        "height": 160
+      },
+      "1280": {
+        "file": "/design/bsa-membership-form-banner-1280.webp",
+        "width": 1280,
+        "height": 320
+      }
+    }
+  },
+  "bsa-officer-introductions": {
+    "slides": 11,
+    "width": 3240,
+    "height": 4050,
+    "ratio": 0.8,
+    "sources": {
+      "640": {
+        "file": "/design/bsa-officer-introductions-640.webp",
+        "width": 640,
+        "height": 800
+      },
+      "1280": {
+        "file": "/design/bsa-officer-introductions-1280.webp",
+        "width": 1280,
+        "height": 1600
+      }
+    }
+  },
+  "bsa-birthday-stories": {
+    "slides": 4,
+    "width": 1897,
+    "height": 3372,
+    "ratio": 0.5626,
+    "sources": {
+      "640": {
+        "file": "/design/bsa-birthday-stories-640.webp",
+        "width": 640,
+        "height": 1138
+      },
+      "1280": {
+        "file": "/design/bsa-birthday-stories-1280.webp",
+        "width": 1280,
+        "height": 2275
+      }
+    }
+  },
+  "bsa-class-of-2025": {
+    "slides": 5,
+    "width": 3240,
+    "height": 4320,
+    "ratio": 0.75,
+    "sources": {
+      "640": {
+        "file": "/design/bsa-class-of-2025-640.webp",
+        "width": 640,
+        "height": 853
+      },
+      "1280": {
+        "file": "/design/bsa-class-of-2025-1280.webp",
+        "width": 1280,
+        "height": 1707
+      }
+    }
+  },
+  "bsa-aapi-heritage-month": {
+    "slides": 6,
+    "width": 3240,
+    "height": 4050,
+    "ratio": 0.8,
+    "sources": {
+      "640": {
+        "file": "/design/bsa-aapi-heritage-month-640.webp",
+        "width": 640,
+        "height": 800
+      },
+      "1280": {
+        "file": "/design/bsa-aapi-heritage-month-1280.webp",
+        "width": 1280,
+        "height": 1600
+      }
+    }
+  },
+  "deca-tarte-campaign": {
+    "slides": 12,
+    "width": 2448,
+    "height": 2344,
+    "ratio": 1.0444,
+    "sources": {
+      "640": {
+        "file": "/design/deca-tarte-campaign-640.webp",
+        "width": 640,
+        "height": 613
+      },
+      "1280": {
+        "file": "/design/deca-tarte-campaign-1280.webp",
+        "width": 1280,
+        "height": 1226
+      }
+    }
+  }
+}
