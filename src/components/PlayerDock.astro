@@ -371,6 +371,20 @@
     };
     new ResizeObserver(dockSpace).observe(dock);
     window.addEventListener("resize", dockSpace);
+    /*
+      And again after every swap, for the same reason `data-js` is re-applied
+      in the layout: ClientRouter replaces every attribute on documentElement,
+      and this property lives in the inline style attribute, so a navigation
+      wipes it.
+
+      The observer cannot cover this one. transition:persist keeps this exact
+      dock node across the swap, so its box never changes, so it never fires,
+      and the clearance stays at nothing until the dock happens to resize for
+      some other reason. Without this line the last card on a phone goes back
+      under the dock on the first click, which is the defect the observer was
+      added to fix.
+    */
+    document.addEventListener("astro:after-swap", dockSpace);
     dockSpace();
 
     /** Writes a track into both surfaces, whichever of them exist right now. */
