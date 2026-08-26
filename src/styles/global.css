@@ -99,7 +99,10 @@
   --s14: 3.5rem;
 
   --sidebar-w: 15rem;
-  --measure: 68ch; /* line length cap for prose */
+  /* There is no --measure token, on purpose. Text fills its box here; see the
+     note above the typography rules. A declared-and-unused token is an
+     invitation to "restore" it, which is exactly how --text-hero still implies
+     a heading scale this site does not have. */
 
   /*
     Touch targets. Two numbers, because they answer two different questions,
@@ -752,43 +755,31 @@ h3 {
   color: var(--amber-max);
 }
 
-p {
-  max-width: var(--measure);
-}
-
 /*
-  A box is never capped. Its own edges are the measure.
+  Text fills the box it is in. Nothing on this site caps a line length, and
+  that is the rule rather than the current state of it.
 
-  --measure is 68ch, and `ch` resolves against each element's own font size, so
-  one cap lands at four different pixel widths on this site: 449px at 11px,
-  530px at 13px, 612px at 15px, 694px at 17px. Inside a bordered card or panel
-  that causes two defects at once. Every block of text stops somewhere in the
-  middle of its own box, and blocks at different sizes stop in different
-  places, so a single panel could put three stacked paragraphs on three
-  different right edges. The colophon was the worst of it: 530px of text inside
-  a 948px box, ending at 56% of the width it had.
+  This was `p { max-width: 68ch }` with an opt-out for anything inside .panel
+  or .entry, and the opt-out list is what gave it away: the cap was wrong often
+  enough that the exceptions kept being added. `ch` resolves against each
+  element's own font size, so one 68ch cap landed at four different pixel
+  widths here, 449px at 11px through 694px at 17px, which put stacked blocks at
+  different sizes on different right edges inside the same box.
 
-  So anything inside .panel or .entry opts out, once, here. New boxes inherit
-  that automatically, which is the whole point of it living in one place: this
-  same bug was found and patched separately in the player, the colophon, the
-  education panel and the card link rows, each time with its own local
-  max-width: none, before it was clear the rule belonged centrally.
+  Removing it outright rather than widening it is what makes this hold without
+  anyone maintaining it. A paragraph added anywhere, boxed or not, now fills
+  the width it is given without opting into anything, and there is no token to
+  reach for and no exception list to keep current. That is the whole point: the
+  previous shape needed every author to know about it, and this one does not.
 
-  Un-boxed prose keeps the cap, because there nothing else stops a line from
-  running the full width of the page: .pagehead__lede under a page heading, the
-  intro paragraphs on the home page, the note at the foot of /404.
+  He asked for this twice. The first time produced the opt-out, on the
+  colophon; the second removed the cap, on the gym split copy. Measured before
+  the change: 13 blocks stopped short across the five pages, with every lede
+  paragraph and the split copy at 58% of the width available to them.
 
-  If you add a text element to a box and it needs a different tag than these,
-  add the tag here rather than writing max-width: none on the component.
+  `npm run audit` fails on a ch-based max-width anywhere in the shipped CSS, so
+  this cannot come back quietly the way it arrived.
 */
-.panel p,
-.panel li,
-.panel dd,
-.entry p,
-.entry li,
-.entry dd {
-  max-width: none;
-}
 
 strong {
   font-weight: 600;
@@ -841,7 +832,6 @@ hr {
 .pagehead__lede {
   margin-top: var(--s3);
   color: var(--amber-dim);
-  max-width: var(--measure);
 }
 
 /* --------------------------------------------------------------- entries -- */

@@ -298,6 +298,36 @@ if (missingRefs.length)
   fail(`CSS references missing files: ${missingRefs.join(", ")}`);
 else pass(`all ${cssRefs.size} CSS url() targets resolve`);
 
+/*
+  No ch-based max-width in the shipped CSS. Text fills the box it is in on this
+  site, and the mechanism that broke that twice was a cap measured in ch: the
+  unit resolves against each element's own font size, so one 68ch rule landed
+  at 449px on an 11px label and 694px on 17px prose, and stacked blocks inside
+  a single box stopped at different places. The owner asked for full-width text
+  twice, on the colophon and again on the gym split copy. This is what stops a
+  third time being necessary.
+
+  Deliberately narrow: it bans the mechanism, not the intent. A cap in px or
+  rem still passes, and still deserves a conversation rather than a silent
+  build failure. The point is that nobody has to remember the rule, because
+  adding text now gets full width without opting into anything.
+
+  CSS is inlined into the HTML here, so the pages are the shipped CSS. Any
+  emitted .css files are scanned too, in case that ever stops being true.
+*/
+const styleSources = [...pages, ...files.filter((f) => extname(f) === ".css")];
+const chCaps = styleSources.flatMap((f) =>
+  [...readFileSync(f, "utf8").matchAll(/max-width\s*:\s*[^;}]*?\d(?:\.\d+)?ch/gi)].map(
+    (m) => m[0].replace(/\s+/g, " ").trim(),
+  ),
+);
+if (chCaps.length)
+  fail(
+    `ch-based max-width in shipped CSS (${chCaps.length}): ` +
+      `${[...new Set(chCaps)].join(", ")}. Text fills its box here; drop the cap.`,
+  );
+else pass("no ch-based max-width");
+
 const js = files.filter((f) => extname(f) === ".js");
 const jsBytes = js.reduce((sum, f) => sum + statSync(f).size, 0);
 const inlineBytes = pages.reduce((sum, f) => {

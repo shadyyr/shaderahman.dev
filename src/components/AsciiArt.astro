@@ -81,9 +81,10 @@ const grid = `\n${rows.join("\n")}`;
     0.6 is IBM Plex Mono's advance as a fraction of the em. It was measured off
     a rendered <pre> at 16px, 100px and 1000px, and separately for each of the
     seven glyphs the art is drawn from, in case one of them fell through to a
-    fallback face: every reading came back 0.600000. The same number is already
-    visible elsewhere on the page, where --measure at 68ch and 17px renders as
-    693.6px. Rendered, the sum lands where it should: in a 384px column the art
+    fallback face: every reading came back 0.600000. It was corroborated at the
+    time against the site's old 68ch prose cap, which resolved to 693.6px at
+    17px, a rule that no longer exists; the advance itself is a property of the
+    face and is unaffected. Rendered, the sum lands where it should: in a 384px column the art
     drew 383.719px of ink and its own scrollWidth never exceeded its client
     width at any viewport tested.
 
