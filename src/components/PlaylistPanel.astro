@@ -9,6 +9,7 @@
  * never presses it makes exactly the requests they made before this existed.
  */
 import playlist from "../data/playlist.json";
+import PixArt from "./PixArt.astro";
 
 interface Props {
   /** How many upcoming tracks to show. The rest still play. */
@@ -119,7 +120,10 @@ const minutes = Math.round((runtime % 3_600_000) / 60_000);
 />
 
 <section aria-labelledby="playlist-heading">
-  <h2 class="section-title" id="playlist-heading">What's on my playlist</h2>
+  <h2 class="section-title section-title--art" id="playlist-heading">
+    <span>What's on my playlist</span>
+    <PixArt name="music" />
+  </h2>
 
   <div class="panel player">
 

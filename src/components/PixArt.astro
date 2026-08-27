@@ -1,0 +1,290 @@
+---
+/**
+ * The little animated drawings that sit beside a section heading.
+ *
+ * Drawn here rather than sourced. A GIF of a game or a lift is someone else's
+ * artwork on a permanent public page, a full colour one would be the loudest
+ * thing on a two colour site, and, most of all, a GIF animates whatever the
+ * reader asked for. These stop under prefers-reduced-motion, which is the one
+ * thing the format cannot do.
+ *
+ * A component rather than markup in each page because the styles have to reach
+ * three drawings across two files, and Astro scopes a page's styles to that
+ * page. The alternative was the same forty lines of CSS copied into
+ * PlaylistPanel, which is how two copies drift apart.
+ *
+ * All three are drawn on a 20 unit grid and rendered at 40px, so every drawn
+ * pixel lands on exactly two screen pixels and nothing blurs. Changing one
+ * without the other is what makes pixel art look muddy.
+ *
+ * **Every drawing starts its ink at x=1.** The box is a fixed 40px square and
+ * the heading puts a fixed gap before it, so the gap a reader actually sees is
+ * that gap plus however much empty grid sits to the left of the first pixel.
+ * With the note starting at x=5 and the lifter at x=1 the two sat visibly
+ * different distances from their headings, despite identical CSS. Keep new
+ * drawings flush to x=1 and the spacing takes care of itself.
+ */
+
+interface Props {
+  /** Which drawing. Each is four frames on the same 20 unit grid. */
+  name: "gym" | "play" | "music";
+}
+
+const { name } = Astro.props;
+
+/*
+  Ids live in the document, not in the component, so two of these on one page
+  would collide on a bare id like "lifter". Astro renders this file once per
+  use, so the prefix is what keeps <use href> pointing at its own drawing.
+*/
+const id = `pixart-${name}`;
+---
+
+<svg class:list={["pixart", `pixart--${name}`]} viewBox="0 0 20 20" aria-hidden="true">
+  {
+    name === "gym" && (
+      <>
+        {/*
+          A lifter on a bench, pressing the bar up and lowering it back. The
+          figure and the bench never move, so they are drawn once and reused;
+          a frame is the bar's height plus the arms that reach it, which is
+          the only thing a press actually changes.
+
+          The gaps are the drawing. A first pass butted the head, torso and
+          thigh together at the same height and they fused into one amber slab
+          that read as a tabletop. A blank column at the neck, and a step down
+          to the legs, is what makes the same pixels read as a person.
+        */}
+        <defs>
+          <g id={id}>
+            <rect class="pixart__mute" x="2" y="13" width="13" height="1" />
+            <rect class="pixart__mute" x="4" y="14" width="1" height="4" />
+            <rect class="pixart__mute" x="12" y="14" width="1" height="4" />
+            <rect x="1" y="9" width="3" height="3" />
+            <rect x="6" y="10" width="6" height="3" />
+            <rect x="12" y="11" width="3" height="2" />
+            <rect x="15" y="12" width="1" height="4" />
+          </g>
+        </defs>
+        <g class="pixart__frame">
+          <use href={`#${id}`} />
+          <rect x="5" y="8" width="1" height="3" />
+          <rect x="6" y="9" width="8" height="1" />
+          <rect x="14" y="8" width="1" height="3" />
+        </g>
+        <g class="pixart__frame">
+          <use href={`#${id}`} />
+          <rect x="5" y="6" width="1" height="3" />
+          <rect x="6" y="7" width="8" height="1" />
+          <rect x="14" y="6" width="1" height="3" />
+          <rect x="7" y="8" width="1" height="2" />
+          <rect x="10" y="8" width="1" height="2" />
+        </g>
+        <g class="pixart__frame">
+          <use href={`#${id}`} />
+          <rect x="5" y="4" width="1" height="3" />
+          <rect x="6" y="5" width="8" height="1" />
+          <rect x="14" y="4" width="1" height="3" />
+          <rect x="7" y="6" width="1" height="4" />
+          <rect x="10" y="6" width="1" height="4" />
+        </g>
+        <g class="pixart__frame">
+          <use href={`#${id}`} />
+          <rect x="5" y="6" width="1" height="3" />
+          <rect x="6" y="7" width="8" height="1" />
+          <rect x="14" y="6" width="1" height="3" />
+          <rect x="7" y="8" width="1" height="2" />
+          <rect x="10" y="8" width="1" height="2" />
+        </g>
+      </>
+    )
+  }
+
+  {
+    name === "play" && (
+      <>
+        {/*
+          A controller, and the animation is the buttons rather than the body:
+          the pad holds still and the two face buttons light one after the
+          other, the way a thumb actually works them. A controller that wobbles
+          reads as broken.
+
+          The d-pad is punched out in the page's own background rather than
+          drawn in a darker amber. A cross of amber lines on an amber body
+          reads as a plus sign; a hole reads as a d-pad.
+        */}
+        <defs>
+          <g id={id}>
+            <rect x="2" y="6" width="14" height="6" />
+            <rect x="1" y="8" width="16" height="3" />
+            <rect x="2" y="12" width="4" height="3" />
+            <rect x="12" y="12" width="4" height="3" />
+            <rect class="pixart__cut" x="5" y="7" width="2" height="4" />
+            <rect class="pixart__cut" x="4" y="8" width="4" height="2" />
+          </g>
+        </defs>
+        <g class="pixart__frame">
+          <use href={`#${id}`} />
+          <rect class="pixart__hot" x="11" y="7" width="2" height="2" />
+          <rect class="pixart__mute" x="13" y="9" width="2" height="2" />
+        </g>
+        <g class="pixart__frame">
+          <use href={`#${id}`} />
+          <rect class="pixart__mute" x="11" y="7" width="2" height="2" />
+          <rect class="pixart__mute" x="13" y="9" width="2" height="2" />
+        </g>
+        <g class="pixart__frame">
+          <use href={`#${id}`} />
+          <rect class="pixart__mute" x="11" y="7" width="2" height="2" />
+          <rect class="pixart__hot" x="13" y="9" width="2" height="2" />
+        </g>
+        <g class="pixart__frame">
+          <use href={`#${id}`} />
+          <rect class="pixart__mute" x="11" y="7" width="2" height="2" />
+          <rect class="pixart__mute" x="13" y="9" width="2" height="2" />
+        </g>
+      </>
+    )
+  }
+
+  {
+    name === "music" && (
+      <>
+        {/*
+          Two notes under one beam, bobbing. The pair is one shape, so like the
+          lifter's bench it is drawn once and each frame is an offset. A single quaver's flag is a curl
+          that needs three or four units to read as a flag rather than a nub,
+          and a beam is a straight bar: it survives this size where the curl
+          does not.
+
+          8 units tall, which is 16px at the 2x this renders at, and 16px is
+          the cap height of .section-title. Matching the font size instead was
+          the first attempt and it still looked oversized, because 1.375rem is
+          the em box and nothing in the heading is ever that tall: measured,
+          this face paints 16px for a capital, 20px from ascender to descender
+          across the whole string, and 12px at the x-height. A drawing sits
+          next to letterforms, so it is the letterforms it has to match, not
+          the box they are laid out in.
+
+          Shrinking the svg instead would have meant scaling 20 units into 16
+          pixels, a fractional ratio that turns crisp pixel art to mush. The
+          ink shrinks; the scale stays whole.
+
+          It travels two units and no further. At three the beam runs into the
+          top of the viewBox and the bob reads as the drawing being clipped,
+          which is the same trap the first dumbbell fell into.
+        */}
+        <defs>
+          <g id={id}>
+            <rect x="3" y="6" width="8" height="1" />
+            <rect x="3" y="7" width="1" height="5" />
+            <rect x="10" y="7" width="1" height="5" />
+            <rect x="1" y="12" width="3" height="2" />
+            <rect x="8" y="12" width="3" height="2" />
+          </g>
+        </defs>
+        <g class="pixart__frame"><use href={`#${id}`} /></g>
+        <g class="pixart__frame"><use href={`#${id}`} transform="translate(0 -1)" /></g>
+        <g class="pixart__frame"><use href={`#${id}`} transform="translate(0 -2)" /></g>
+        <g class="pixart__frame"><use href={`#${id}`} transform="translate(0 -1)" /></g>
+      </>
+    )
+  }
+</svg>
+
+<style>
+  /*
+    40px on a 20 unit grid: two screen pixels per drawn pixel. crispEdges holds
+    that on a fractional device ratio, where the renderer would otherwise
+    antialias the steps back into mush and undo the point of drawing it this
+    way.
+
+    Amber, because these are content rather than something to click, and blue
+    on this site means it goes somewhere.
+  */
+  .pixart {
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: none;
+    fill: var(--amber);
+    shape-rendering: crispEdges;
+  }
+
+  /* The bench, its legs, and a button at rest. Back far enough to sit behind
+     the thing in front of it without competing. */
+  .pixart__mute {
+    fill: var(--amber-faint);
+  }
+
+  /* A hole, not a darker shade. Punching the d-pad out in the page's own
+     background is what makes it read as recessed. */
+  .pixart__cut {
+    fill: var(--bg);
+  }
+
+  /* The pressed button, and the only thing on any of these that brightens. */
+  .pixart__hot {
+    fill: var(--amber-max);
+  }
+
+  /*
+    Four frames, one visible at a time. steps(1) so a frame holds and then
+    swaps rather than fading, which is what makes it read as pixel animation
+    instead of a crossfade.
+
+    nth-of-type rather than nth-child: every drawing keeps its shared shape in
+    a <defs>, and counting all children would put each frame one place out.
+  */
+  .pixart__frame {
+    opacity: 0;
+    animation: pixart-cycle 1.6s steps(1) infinite;
+  }
+
+  .pixart__frame:nth-of-type(2) {
+    animation-delay: 0.4s;
+  }
+
+  .pixart__frame:nth-of-type(3) {
+    animation-delay: 0.8s;
+  }
+
+  .pixart__frame:nth-of-type(4) {
+    animation-delay: 1.2s;
+  }
+
+  @keyframes pixart-cycle {
+    0%,
+    25% {
+      opacity: 1;
+    }
+    25.001%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /*
+    This is the reason these are drawn rather than dropped in as GIFs. A GIF
+    animates regardless of what anyone asked for; this can be told to stop.
+
+    Switching the animation off alone would leave every frame at its resting
+    opacity: 0 and the drawing would vanish, because global.css cuts animations
+    to 0.01ms under this query and the keyframe ends transparent. So one frame
+    is pinned on, and which one differs by drawing: the press at full
+    extension, which is the frame that reads as a press rather than as a man
+    lying down; the controller with nothing lit, because a button held bright
+    forever looks stuck rather than pressed; and the note at rest.
+  */
+  @media (prefers-reduced-motion: reduce) {
+    .pixart__frame {
+      animation-name: none;
+      opacity: 0;
+    }
+
+    .pixart--gym .pixart__frame:nth-of-type(3),
+    .pixart--play .pixart__frame:nth-of-type(2),
+    .pixart--music .pixart__frame:nth-of-type(1) {
+      opacity: 1;
+    }
+  }
+</style>
