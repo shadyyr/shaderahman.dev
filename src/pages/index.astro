@@ -3,6 +3,7 @@ import OsLayout from "../layouts/OsLayout.astro";
 import PageHead from "../components/PageHead.astro";
 import ExternalKey from "../components/ExternalKey.astro";
 import PlaylistPanel from "../components/PlaylistPanel.astro";
+import PixArt from "../components/PixArt.astro";
 import { SITE, TRAINING_SPLIT } from "../lib/site";
 import { findResume } from "../lib/resume";
 
@@ -17,7 +18,12 @@ const buildDate = new Date().toISOString().slice(0, 10);
   path="/"
   isHome
 >
-  <PageHead eyebrow={`${SITE.system.label} · ready`} heading={SITE.name} tight>
+  {/* No eyebrow here on purpose. It read "SHADE.OS · ready" directly under a
+      title bar and a sidebar that both already say SHADE.OS, so it was the
+      third time the same word appeared above the fold. PageHead makes it
+      optional, so leaving the prop off removes the element rather than
+      hiding it. */}
+  <PageHead heading={SITE.name} tight>
     <p class="tagline">{SITE.role} · {SITE.location}</p>
   </PageHead>
 
@@ -88,7 +94,10 @@ const buildDate = new Date().toISOString().slice(0, 10);
     <PlaylistPanel />
 
     <section aria-labelledby="split-heading">
-      <h2 class="section-title" id="split-heading">Gym split</h2>
+      <h2 class="section-title section-title--art" id="split-heading">
+        <span>Gym split</span>
+        <PixArt name="gym" />
+      </h2>
 
       <p class="split__intro">
         Staying consistent at the gym is something I struggled with for most of
@@ -143,6 +152,28 @@ const buildDate = new Date().toISOString().slice(0, 10);
           ))
         }
       </div>
+    </section>
+
+    <section aria-labelledby="plays-heading">
+      <h2 class="section-title section-title--art" id="plays-heading">
+        <span>What I play</span>
+        <PixArt name="play" />
+      </h2>
+
+      {/*
+        The {" "} is load-bearing. Astro drops the whitespace between a tag and
+        the text on the next source line, so breaking the line right after
+        </strong> renders "216 hoursin it". Keep the closing tag and the word
+        after it together, or put the space back explicitly, the way the
+        colophon already does around its font links.
+      */}
+      <p class="plays__intro">
+        Stardew Valley is my favorite game, and I have{" "}
+        <strong>216 hours</strong> in it to prove it. The appeal is that it is
+        calm. It is what I put on when I want to relax rather than compete. Now
+        I still play Valorant and Overwatch, and I do enjoy them, but they are
+        stressful in a way Stardew never is.
+      </p>
     </section>
 
     <section class="panel panel--plain colophon" aria-labelledby="colophon-heading">
@@ -433,6 +464,22 @@ const buildDate = new Date().toISOString().slice(0, 10);
   .split__table tbody td {
     text-align: right;
     white-space: nowrap;
+  }
+
+  /*
+    32px on a 16 unit grid, so every drawn pixel lands on exactly two screen
+    pixels and nothing blurs. crispEdges holds that on a fractional device
+    ratio, where the renderer would otherwise antialias the steps back into
+    mush and undo the point of drawing it this way.
+
+    Amber, because these are content rather than something to click, and blue
+    on this site means it goes somewhere.
+  */
+  /* Same treatment as the copy above the split, because it is the same kind of
+     thing: a paragraph in his own voice sitting under a standing section
+     title. No width is set, so it fills its column like everything else. */
+  .plays__intro {
+    color: var(--amber);
   }
 
   /* Full width of the panel, because nothing caps text on this site any more.

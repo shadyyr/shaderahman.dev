@@ -724,6 +724,22 @@ a:active {
   margin-bottom: var(--s5);
 }
 
+/*
+  The same heading with one of the PixArt drawings beside it. Here rather than
+  in a page's scoped styles because three of them sit across two files, and
+  Astro scopes a page's CSS to that page: the playlist heading lives in
+  PlaylistPanel and would not have seen a copy kept in index.
+
+  The drawing is a flex item so it keeps its own 40px and the heading text
+  takes the rest, and centred so a 40px square sits level with a 22px line
+  rather than hanging off its baseline.
+*/
+.section-title--art {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+
 /* ------------------------------------------------------------- typography - */
 
 h1,
