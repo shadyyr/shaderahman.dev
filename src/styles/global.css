@@ -81,10 +81,8 @@
   --text-sm: 0.8125rem; /* 13px */
   --text-body: 0.9375rem; /* 15px */
   --text-lg: 1.0625rem; /* 17px */
-  --text-h3: 1.375rem; /* 22px, Departure */
   --text-h2: 1.375rem;
   --text-h1: 2.0625rem; /* 33px, Departure */
-  --text-hero: 2.75rem; /* 44px, Departure */
 
   /* Rhythm. Deliberately uneven: a section break should not read the same
      as the gap between two bullets. */
@@ -101,8 +99,8 @@
   --sidebar-w: 15rem;
   /* There is no --measure token, on purpose. Text fills its box here; see the
      note above the typography rules. A declared-and-unused token is an
-     invitation to "restore" it, which is exactly how --text-hero still implies
-     a heading scale this site does not have. */
+     invitation to "restore" it into a layout that never asked for it, so the
+     scale below stops at the sizes the site actually sets. */
 
   /*
     Touch targets. Two numbers, because they answer two different questions,
@@ -663,7 +661,6 @@ a:active {
   .education__school a,
   .skill__evidence a,
   .collab a,
-  .more a,
   .colophon a {
     padding-block: var(--tap-pad);
     line-height: 2;
@@ -1073,20 +1070,12 @@ hr {
   gap: var(--s6);
 }
 
-.stack--tight {
-  gap: var(--s3);
-}
-
 .stack--loose {
   gap: var(--s10);
 }
 
 .muted {
   color: var(--amber-dim);
-}
-
-.faint {
-  color: var(--amber-faint);
 }
 
 .visually-hidden {

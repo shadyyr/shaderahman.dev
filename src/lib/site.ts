@@ -218,8 +218,6 @@ export const ROUTES = [
   { path: "/skills", label: "skills", title: "Skills", key: "s" },
 ] as const;
 
-export type Route = (typeof ROUTES)[number];
-
 /** Absolute URL for a site-relative path. OG tags and JSON-LD require absolute. */
 export function abs(path: string): string {
   return new URL(path, SITE.origin).href;
