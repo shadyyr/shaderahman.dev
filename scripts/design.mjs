@@ -2,7 +2,7 @@
  * Turns the design sources in art/design/ into the web derivatives the site
  * actually serves, and writes what it measured into src/data/design-assets.json.
  *
- * Same arrangement as `npm run assets` and `npm run ascii`: the output is
+ * Same arrangement as `npm run assets`: the output is
  * committed and a normal build never runs this. Rerun it by hand when a piece
  * is added or replaced, and commit the result.
  *

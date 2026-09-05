@@ -4,7 +4,7 @@
  *   npm run spotify              resolve anything not already cached
  *   npm run spotify -- --force   re-resolve every track
  *
- * Run by hand, like `npm run assets` and `npm run ascii`. A normal build never
+ * Run by hand, like `npm run assets`. A normal build never
  * calls this and never talks to Spotify, so a deploy cannot fail because their
  * API is down and the site still builds with no network at all.
  *

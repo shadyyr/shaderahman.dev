@@ -1,13 +1,8 @@
 # Line endings, normalised in the repository, native in the working tree.
 * text=auto
 
-# The symbol art is a grid, and a carriage return is a column.
-#
-# core.autocrlf is on for this machine, so without this line a fresh Windows
-# checkout hands src/assets/portrait.txt back with CRLF endings. Every row then
-# measures one character wider than it draws, and the component sizes the type
-# from the longest line, so the whole picture renders slightly too small and
-# slightly off. AsciiArt.astro strips the carriage returns anyway, but a file
-# whose bytes depend on who checked it out is the wrong thing to be defending
-# against in a template.
+# These .txt files are either served verbatim (robots.txt, llms.txt) or parsed
+# a line at a time (src/data/tracks.txt), and core.autocrlf is on for some of
+# the machines this repo gets cloned to. A file whose bytes depend on who
+# checked it out is the wrong thing to be defending against downstream.
 *.txt -text
