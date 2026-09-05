@@ -12,6 +12,8 @@ import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
 const OUT = new URL("../public/", import.meta.url);
+/** Vector sources live outside public/ so they are not published with the site. */
+const SRC = new URL("../art/", import.meta.url);
 /** sharp wants a filesystem path, and URL.pathname is wrong on Windows. */
 const out = (name) => fileURLToPath(new URL(name, OUT));
 
@@ -27,34 +29,25 @@ const FAINT = "#5c3f11";
 /* ------------------------------------------------------------------ icons - */
 
 /*
-  Everything below derives from logo.svg, the vectorised S / R lockup, but only
-  the pointer glyph cut out of it is ever drawn: the favicon, the touch icon,
-  the two cursors and now the og card all use that one glyph.
+  Everything below derives from logo.svg, the pointer glyph: the favicon, the
+  touch icon, the two cursors and the og card all draw that one mark.
 
-  The S / R lockup itself is no longer rendered anywhere. It appeared on the og
-  card alone, which meant the share card was the only surface carrying a mark
-  the site never showed you. The pointer is the thing people actually meet, as
-  the cursor on every page, so the card leads with that instead.
-
-  logo.svg stays the source: the glyph is still cut out of it, and it is the
-  only drawing of either mark that exists.
+  It used to be cut out of a larger S / R lockup, which the og card was the
+  only surface still carrying. The pointer is the thing people actually meet,
+  as the cursor on every page, so the card leads with that and the lockup is
+  retired. The source is now the glyph alone, with nothing to crop.
 */
-const logoSvg = await readFile(new URL("logo.svg", OUT), "utf8");
-/** The bare rects, which is where the pointer glyph is cut from below. */
+const logoSvg = await readFile(new URL("logo.svg", SRC), "utf8");
+/** The bare rects, which the glyph is assembled from below. */
 const logoInner = logoSvg
   .replace(/^[\s\S]*?<svg[^>]*>/, "")
   .replace(/<\/svg>\s*$/, "");
 
-/*
-  The pointer glyph. The R ends at column 66 and a four-column gap separates
-  it from the cursor, so x >= 68 selects exactly the cursor's rects: 7x11
-  cells, amber outline, dark interior.
-*/
+/* The pointer glyph: 7x11 cells, amber outline, dark interior. */
 const cursorRects = [...logoInner.matchAll(
   /<rect x="(\d+)" y="(\d+)" width="(\d+)" height="(\d+)" fill="([^"]+)"\/>/g,
 )]
-  .map(([, x, y, w, h, f]) => ({ x: +x, y: +y, w: +w, h: +h, f }))
-  .filter((r) => r.x >= 68);
+  .map(([, x, y, w, h, f]) => ({ x: +x, y: +y, w: +w, h: +h, f }));
 
 const cMinX = Math.min(...cursorRects.map((r) => r.x));
 const cMinY = Math.min(...cursorRects.map((r) => r.y));
