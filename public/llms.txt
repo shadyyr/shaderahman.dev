@@ -8,9 +8,10 @@ Contact: shaderahman123@gmail.com
 
 ## Pages
 
-- [Home](https://shaderahman.dev/): What I am working on now and selected projects.
+- [Home](https://shaderahman.dev/): Who I am, the music I listen to, my gym split, and the games I play.
 - [Experience](https://shaderahman.dev/experience): Every role in reverse order, plus education.
 - [Projects](https://shaderahman.dev/projects): What each project does, what broke, and where the source is.
+- [Design](https://shaderahman.dev/design): Graphic design for the Bengali Student Association and Knight Hacks: event flyers, Instagram carousels, banners, and application graphics.
 - [Skills](https://shaderahman.dev/skills): What I work with, each linked to the work where it was used.
 
 ## Projects

@@ -87,7 +87,7 @@ const projects = defineCollection({
       .array(z.object({ name: z.string(), url: z.string().url().optional() }))
       .default([]),
     links: z.array(link).default([]),
-    /** Surfaces on the home page. Keep it to two or three. */
+    /** Sorts to the top of /projects. Keep it to two or three. */
     featured: z.boolean().default(false),
     draft: z.boolean().default(false),
   }),
