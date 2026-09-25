@@ -9,12 +9,12 @@ summary: >-
   and the vice presidency. The job is mostly delegation and calendar: nine
   people, fifteen events, one academic year.
 bullets:
-  - "Leading a **9-person** board, delegating across marketing, events, and operations to execute **15** planned events for the 2026–2027 academic year."
-  - "Grew the club's Instagram to **196K+** monthly views and **838** new followers in a single month by leading a full content-strategy overhaul, with a **157.6%** reach increase and **1,661** interactions."
-  - "Directing club operations end to end, covering multicultural events, membership initiatives, and club sales and fundraising, to promote Bengali culture on campus."
+  - "Restructured board operations by creating dedicated committees (Outreach, Dance) and delegating ownership across a **9-person** board, enabling parallel execution of **15** planned events without adding headcount."
+  - "Enabled the Outreach Committee to run weekly tablings independently by building an inventory, sales log, and profit tracking system, contributing to a **110%** increase in average per-tabling revenue year-over-year."
+  - "Oversee a **$3,700** annual budget allocated by SGA across **3** flagship events, securing **$1,883.88** in itemized funding approval for the first event through vendor negotiation, compliance documentation, and multi-form procurement requests."
 tags:
   - { name: "Leadership", starred: true }
   - { name: "Event operations", starred: true }
   - { name: "Delegation" }
-  - { name: "Marketing strategy" }
+  - { name: "Budgeting" }
 ---

@@ -3,7 +3,7 @@
 # the previous Vercel deployment was returning DEPLOYMENT_NOT_FOUND.
 title: "annabelle.sfx"
 period: "July 2026"
-date: "2026-07"
+date: "2026-07-18"
 summary: >-
   A birthday present for my best friend. A mobile-first soundboard styled after
   a Stream Deck with **sixteen tactile keys** in a 4×4 grid, one sound each, no
