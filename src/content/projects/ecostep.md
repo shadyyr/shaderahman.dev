@@ -1,8 +1,7 @@
 ---
 title: "EcoStep"
 period: "BloomKnights 2026"
-date: "2026-07"
-featured: true
+date: "2026-07-11"
 summary: >-
   Home energy upgrades are worth thousands in rebates that almost nobody
   claims, because working out which ones you qualify for means reading your own

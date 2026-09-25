@@ -1,7 +1,7 @@
 ---
 title: "Network Connectivity Analyzer"
 period: "June 2026"
-date: "2026-06"
+date: "2026-06-09"
 summary: >-
   Given a network and a list of connections that fail one after another, how
   connected does the network stay at each step? This answers that question in

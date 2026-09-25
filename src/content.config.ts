@@ -62,10 +62,16 @@ const projects = defineCollection({
      */
     period: z.string(),
     /**
-     * Sorting only, never rendered. Month precision matters: a portfolio
-     * built in one busy year has too many ties at year granularity.
+     * Sorting only, never rendered. /projects is strictly newest first, so
+     * two projects in the same month need a day to settle which leads:
+     * "2026-07-18". Month alone is fine when nothing else shares it.
      */
-    date: yearMonth,
+    date: z
+      .string()
+      .regex(
+        /^\d{4}-(0[1-9]|1[0-2])(-(0[1-9]|[12]\d|3[01]))?$/,
+        "use YYYY-MM or YYYY-MM-DD, e.g. 2026-05",
+      ),
     /**
      * Quantify placements. "1st of 112" is a signal; a bare "Winner" is noise.
      */
@@ -87,8 +93,6 @@ const projects = defineCollection({
       .array(z.object({ name: z.string(), url: z.string().url().optional() }))
       .default([]),
     links: z.array(link).default([]),
-    /** Sorts to the top of /projects. Keep it to two or three. */
-    featured: z.boolean().default(false),
     draft: z.boolean().default(false),
   }),
 });
