@@ -1,8 +1,7 @@
 ---
 title: "Bolo"
 period: "June 2026"
-date: "2026-06"
-featured: true
+date: "2026-06-26"
 summary: >-
   Plenty of people read English perfectly well, but are slow at writing it, so
   an email reply they could think through in a minute costs them **half an
@@ -27,9 +26,9 @@ highlights:
   - label: "The measured result"
     detail: "Drafting time for a real business email thread dropped from **30 minutes to 4**, in a self-timed before/after comparison."
   - label: "Keeping the English that was already there"
-    detail: "People writing in a second language mix English words and phrases into their native text, and those are usually the parts they are most sure about. **35 regression tests** check that embedded English brand names, phrases, and numbers survive translation instead of being translated away, which is the failure mode that makes a tool feel like it is correcting you."
-  - label: "What testing found"
-    detail: "**97** passing offline unit tests (parsing, prompt-injection defense, text cleanup) and **10** bugs fixed in a dedicated audit pass."
+    detail: "People writing in a second language mix English words and phrases into their native text, and those are usually the parts they are most sure about. **35 regression tests** check that embedded English brand names, phrases, and numbers survive translation into Bangla, Spanish, and Gujarati instead of being translated away, which is the failure mode that makes a tool feel like it is correcting you."
+  - label: "Hardening, and what testing found"
+    detail: "Prompt-injection detection, Unicode-aware OCR cleanup, and runtime API validation, backed by **97** passing offline unit tests (parsing, prompt-injection defense, text cleanup) and **10** bugs fixed in a dedicated audit pass."
 links:
   - { label: "Try Bolo", url: "https://bolo-chi.vercel.app" }
   - { label: "Source on GitHub", url: "https://github.com/shadyyr/bolo" }
