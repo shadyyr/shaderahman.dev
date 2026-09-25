@@ -35,9 +35,15 @@ highlights:
     detail: "The first person to see it called it information overload. The fix was resequencing the flow and revealing detail progressively, not removing evidence, because the evidence is the point."
   - label: "Two agents, one repo"
     detail: "Built with two AI coding agents working one shared repository: Claude on the web app, Codex on the API."
+# The Devpost slug suffix is load-bearing, same as EcoStep's:
+# devpost.com/software/fineprint with no suffix is a different team's project
+# from Hack-Attack 2.0.
 links:
-  - { label: "Try FinePrint", url: "https://fineprint-aid.vercel.app" }
   - { label: "Source on GitHub", url: "https://github.com/shadyyr/fineprint" }
+  - {
+      label: "Writeup on Devpost",
+      url: "https://devpost.com/software/fineprint-gctiao",
+    }
 ---
 
 Submitted to SASEhack 2026 for Best Finance Hack and Best Education,
