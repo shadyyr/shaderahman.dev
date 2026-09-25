@@ -2,7 +2,6 @@
 title: "Cooked!"
 period: "HackUSF 2026"
 date: "2026-03"
-featured: true
 summary: >-
   Recipe sites want you to already have the ingredients. Cooked! goes the other
   way: type in what is actually in your fridge and it ranks recipes by **match

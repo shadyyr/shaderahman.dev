@@ -1,4 +1,39 @@
 {
+  "knight-hacks-gbm-1-recap": {
+    "slides": 4,
+    "ratio": 0.8,
+    "thumb": {
+      "file": "/design/knight-hacks-gbm-1-recap-thumb.webp",
+      "width": 640,
+      "height": 800
+    },
+    "pages": [
+      {
+        "file": "/design/knight-hacks-gbm-1-recap-1.webp",
+        "width": 1080,
+        "height": 1350,
+        "ratio": 0.8
+      },
+      {
+        "file": "/design/knight-hacks-gbm-1-recap-2.webp",
+        "width": 1080,
+        "height": 1350,
+        "ratio": 0.8
+      },
+      {
+        "file": "/design/knight-hacks-gbm-1-recap-3.webp",
+        "width": 1080,
+        "height": 1350,
+        "ratio": 0.8
+      },
+      {
+        "file": "/design/knight-hacks-gbm-1-recap-4.webp",
+        "width": 1080,
+        "height": 1350,
+        "ratio": 0.8
+      }
+    ]
+  },
   "knight-hacks-ix-carousel": {
     "slides": 7,
     "ratio": 0.7503,
