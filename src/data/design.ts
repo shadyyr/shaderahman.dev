@@ -58,6 +58,19 @@ export type DesignPiece = {
 
 export const DESIGN: DesignPiece[] = [
   {
+    /*
+      Posted 2026-09-08, which is the date the post's own shortcode decodes
+      to. Four slides of event photos and the Knight Hacks mark; checked every
+      page, and there is no contact detail anywhere to put a bar over.
+    */
+    slug: "knight-hacks-gbm-1-recap",
+    source: "Knight Hacks GBM 1 Recap.pdf",
+    title: "Knight Hacks GBM #1 recap",
+    org: "Knight Hacks",
+    date: "2026-09",
+    post: "https://www.instagram.com/p/DdCVYv_GUl-/",
+  },
+  {
     slug: "knight-hacks-ix-carousel",
     source: "Knight Hacks IX Carousel Instagram Post.pdf",
     title: "Knight Hacks IX announcement carousel",
