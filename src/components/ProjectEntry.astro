@@ -21,11 +21,13 @@ const hasBody = !compact && entry.body != null && entry.body.trim().length > 0;
 
 <li class="entry">
   <div class="entry__head">
-    {/* The award rides on the title's line as a short "Winner" mark. On a
-        line of its own, above or below, it left a gap no other card has. The
+    <Heading class="entry__title">{data.title}</Heading>
+    {/* The award finishes the period, "SASEhack 2026 ★ Winner", rather than
+        taking a line of its own. On its own line, above or below, it left a
+        gap no other card has, and beside the title it crowded the name. The
         full prize name lives in the entry's body text, and on hover. */}
-    <div class="entry__name">
-      <Heading class="entry__title">{data.title}</Heading>
+    <p class="entry__meta">
+      {data.period}
       {
         data.award && (
           <span class="award" title={formatAward(data.award)}>
@@ -33,8 +35,7 @@ const hasBody = !compact && entry.body != null && entry.body.trim().length > 0;
           </span>
         )
       }
-    </div>
-    <p class="entry__meta">{data.period}</p>
+    </p>
   </div>
 
   {/* Through emphasize, the same as an experience bullet: `**` around the
@@ -108,17 +109,10 @@ const hasBody = !compact && entry.body != null && entry.body.trim().length > 0;
 </li>
 
 <style>
-  .entry__name {
-    display: flex;
-    align-items: baseline;
-    gap: var(--s3);
-  }
-
+  /* Inherits the period's type from .entry__meta; only brighter. */
   .award {
+    margin-left: var(--s2);
     white-space: nowrap;
-    font-family: var(--font-display);
-    font-size: var(--text-micro);
-    letter-spacing: 0.08em;
     color: var(--amber-max);
   }
 
