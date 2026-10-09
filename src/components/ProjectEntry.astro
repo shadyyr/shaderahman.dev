@@ -22,10 +22,13 @@ const hasBody = !compact && entry.body != null && entry.body.trim().length > 0;
 <li class="entry">
   <div class="entry__head">
     <Heading class="entry__title">{data.title}</Heading>
-    <p class="entry__meta">{data.period}</p>
+    {/* The award sits under the period, not under the title. A line of small
+        type beneath the name made it read smaller than its neighbours. */}
+    <div class="entry__aside">
+      <p class="entry__meta">{data.period}</p>
+      {data.award && <p class="award">{formatAward(data.award)}</p>}
+    </div>
   </div>
-
-  {data.award && <p class="award">{formatAward(data.award)}</p>}
 
   {/* Through emphasize, the same as an experience bullet: `**` around the
       figure that carries the claim, and nothing else honoured. It escapes
@@ -98,8 +101,15 @@ const hasBody = !compact && entry.body != null && entry.body.trim().length > 0;
 </li>
 
 <style>
+  /* Takes over the push to the right from .entry__meta, and keeps both lines
+     right-aligned even when the head wraps under the title on a phone. */
+  .entry__aside {
+    margin-left: auto;
+    text-align: right;
+  }
+
   .award {
-    margin-top: var(--s2);
+    margin-top: var(--s1);
     font-family: var(--font-display);
     font-size: var(--text-micro);
     letter-spacing: 0.08em;
