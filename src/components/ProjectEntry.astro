@@ -21,21 +21,23 @@ const hasBody = !compact && entry.body != null && entry.body.trim().length > 0;
 
 <li class="entry">
   <div class="entry__head">
-    <Heading class="entry__title">{data.title}</Heading>
-    {/* The award finishes the period, "SASEhack 2026 ★ Winner", rather than
-        taking a line of its own. On its own line, above or below, it left a
-        gap no other card has, and beside the title it crowded the name. The
-        full prize name lives in the entry's body text, and on hover. */}
-    <p class="entry__meta">
-      {data.period}
+    {/* The award is a second line of the title, in the experience card's
+        company styling: same face and size, a step dimmer than the name. As a
+        micro label it read as an afterthought, and inline after a "·" it
+        crowded the name. The head row aligns on the first baseline, so the
+        period still lines up with the name rather than the award. */}
+    <Heading class="entry__title">
+      {data.title}
       {
         data.award && (
-          <span class="award" title={formatAward(data.award)}>
-            Winner
+          <span class="entry__org award">
+            {formatAward(data.award)}
+            <span class="award__star" aria-hidden="true">★</span>
           </span>
         )
       }
-    </p>
+    </Heading>
+    <p class="entry__meta">{data.period}</p>
   </div>
 
   {/* Through emphasize, the same as an experience bullet: `**` around the
@@ -109,15 +111,20 @@ const hasBody = !compact && entry.body != null && entry.body.trim().length > 0;
 </li>
 
 <style>
-  /* Inherits the period's type from .entry__meta; only brighter. */
+  /* The star trails the prize name, so the name starts on the same edge as
+     the project name above it. */
   .award {
-    margin-left: var(--s2);
-    white-space: nowrap;
-    color: var(--amber-max);
+    display: block;
+    margin-top: var(--s1);
   }
 
-  .award::before {
-    content: "★ ";
+  /* The ★ glyph draws small next to letters at the same size. line-height: 1
+     keeps the larger glyph from making its line taller than the name's. */
+  .award__star {
+    margin-left: 0.55ch;
+    font-size: 1.75em;
+    line-height: 0;
+    vertical-align: -0.05em;
   }
 
   .highlights {
