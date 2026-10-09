@@ -25,13 +25,16 @@ const hasBody = !compact && entry.body != null && entry.body.trim().length > 0;
         company styling: same face and size, a step dimmer than the name. As a
         micro label it read as an afterthought, and inline after a "·" it
         crowded the name. The head row aligns on the first baseline, so the
-        period still lines up with the name rather than the award. */}
+        period still lines up with the name rather than the award.
+
+        It says only "Winner". The prize name is on hover here, and the entry's
+        body names it in full. */}
     <Heading class="entry__title">
       {data.title}
       {
         data.award && (
-          <span class="entry__org award">
-            {formatAward(data.award)}
+          <span class="entry__org award" title={formatAward(data.award)}>
+            Winner
             <span class="award__star" aria-hidden="true">★</span>
           </span>
         )
