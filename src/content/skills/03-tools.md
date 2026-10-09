@@ -6,6 +6,7 @@ items:
   - { name: "Figma" }
   - { name: "Adobe Photoshop" }
   - { name: "Canva" }
+  - { name: "Docker" }
   - { name: "Vercel" }
   - { name: "Supabase" }
   - { name: "Notion" }
