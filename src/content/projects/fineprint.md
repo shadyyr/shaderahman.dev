@@ -1,10 +1,10 @@
 ---
-# No award field on purpose. Submitted to SASEhack 2026 (Best Finance Hack, and
-# Best Education/Accessibility/Social Impact), and results have not been
-# announced. Add the placement here only once it is real.
+# No rank or field size on the award: Devpost lists the track win but not how
+# many projects were in it, and a guessed "of N" is worse than none.
 title: "FinePrint"
 period: "SASEhack 2026"
 date: "2026-09"
+award: { label: "Best Finance Hack" }
 summary: >-
   A financial-aid offer letter can advertise a large "financial aid" total
   while mixing money a student keeps, money they repay, and wages they have to
@@ -46,5 +46,5 @@ links:
     }
 ---
 
-Submitted to SASEhack 2026 for Best Finance Hack and Best Education,
-Accessibility, or Social Impact. Results have not been announced yet.
+Won Best Finance Hack at SASEhack 2026. Also submitted for Best Education,
+Accessibility, or Social Impact.
