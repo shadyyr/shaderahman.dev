@@ -9,6 +9,10 @@ order: 40
 # The note says "coursework" only where the "used at" link does not already
 # say the rest. Repeating the project name in both reads as padding.
 items:
+  - { name: "Raspberry Pi" }
+  - { name: "ESP32" }
+  - { name: "ROS 2" }
+  - { name: "I2C" }
   - { name: "Verilog", note: "coursework" }
   - { name: "FPGA", note: "coursework" }
   - { name: "RTL Design", note: "coursework" }

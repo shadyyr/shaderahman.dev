@@ -4,6 +4,7 @@ order: 20
 items:
   - { name: "Next.js" }
   - { name: "React" }
+  - { name: "FastAPI" }
   - { name: "Flask" }
   - { name: "REST APIs" }
   - { name: "Gemini API" }

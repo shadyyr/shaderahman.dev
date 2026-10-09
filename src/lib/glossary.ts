@@ -29,6 +29,10 @@ export const GLOSSARY: Record<string, string> = {
   Supabase: "Hosted Postgres with auth and storage attached",
   "Tesseract.js": "An OCR engine that runs in the browser",
   Flask: "A small Python web framework",
+  FastAPI: "A Python web framework built around type hints and async",
+  "ROS 2": "Robot Operating System 2, middleware for robot software rather than an operating system",
+  ESP32: "A low-cost microcontroller with Wi-Fi, common in hobby and embedded hardware",
+  I2C: "A two-wire bus for talking to chips and sensors on the same board",
   "Next.js": "A React framework with server rendering and file-based routing",
 };
 

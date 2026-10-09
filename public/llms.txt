@@ -16,6 +16,8 @@ Contact: shaderahman123@gmail.com
 
 ## Projects
 
+- [Rescuebot](https://devpost.com/software/robolook): A browser-driven search-and-rescue robot that finds people with an AI camera and maps rooms with LiDAR. Built at ShellHacks 2026 with Python, FastAPI, ROS 2, and an ESP32 on a Raspberry Pi 5. Source at https://github.com/Kevinli7673/shellhacks2026
+- [FinePrint](https://devpost.com/software/fineprint-gctiao): Separates real gift aid from loans and work-study in a financial-aid offer letter, checking every figure against the PDF. Won Best Finance Hack at SASEhack 2026. Next.js, FastAPI, and the OpenAI API. Source at https://github.com/shadyyr/fineprint
 - [EcoStep](https://devpost.com/software/ecostep-to16qv): Reads appliance labels and utility bills to find home energy rebates worth claiming. Built at BloomKnights 2026 on Next.js, Supabase, and the Gemini API. Source at https://github.com/shadyyr/ecostep
 - [Bolo](https://bolo-chi.vercel.app): Turns native-language text, speech, or an email screenshot into a drafted English email without flattening the English already in it. Next.js, Tesseract.js, Gemini and OpenAI APIs. Source at https://github.com/shadyyr/bolo
 - [Cooked!](https://devpost.com/software/cooked-m9206r): Ranks recipes by how much of each one you can already make from what is in your fridge. Flask and Gemini backend, Next.js frontend. Built at HackUSF 2026. Source at https://github.com/shadyyr/cooked
