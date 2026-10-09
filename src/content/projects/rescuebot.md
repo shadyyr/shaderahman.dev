@@ -31,12 +31,16 @@ highlights:
     detail: "Pi-to-ESP32 control is a newline-delimited JSON protocol with session and sequence numbers. Stale or repeated commands are dropped and never queued, so a network hiccup cannot make the robot replay a backlog of old movements. The Python and firmware sides both replay **35 shared test vectors** so they cannot drift apart. I also tracked down I2C stalls caused by **8.6 ms** transactions, ending at **38/38** ACKs with a **53 ms** longest silence."
   - label: "ROS 2 on a Pi that has no ROS 2"
     detail: "The Pi runs Debian 13, which has no ROS 2 packages, so ROS 2 Jazzy (SLAM Toolbox and Nav2) runs in Docker and reads the LiDAR and IMU through the dashboard's HTTP API. Autonomy can only drive through the same socket and safety checks as a person at the keyboard. The wheels stalled under Nav2's small commands until I added a minimum PWM and had it drive one axis at a time."
-  - label: "What is not verified yet"
-    detail: "Manual driving, person detection, Gemini triage, SLAM mapping, and forward and backward autonomy goals all work on the real robot. A full room search, end to end, does not have a verified run yet. Strafing is weak because of how the weight sits on the chassis, and the power bank cannot supply the 5 A a Pi 5 asks for, which caused undervoltage and USB dropouts."
 collaborators:
-  - { name: "Alvaro Canseco-Martinez", url: "https://github.com/a1vcm" }
-  - { name: "Isabelle Mathew", url: "https://github.com/imathew2008" }
-  - { name: "Kevin Li", url: "https://github.com/Kevinli7673" }
+  - {
+      name: "Alvaro Canseco-Martinez",
+      url: "https://www.linkedin.com/in/alvaro-canseco-martinez/",
+    }
+  - {
+      name: "Isabelle Mathew",
+      url: "https://www.linkedin.com/in/isabelle-mathew-21159a3ab/",
+    }
+  - { name: "Kevin Li", url: "https://www.linkedin.com/in/kevin-li7673/" }
 links:
   - {
       label: "Source on GitHub",
