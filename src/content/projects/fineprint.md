@@ -46,5 +46,5 @@ links:
     }
 ---
 
-Won Best Finance Hack at SASEhack 2026. Also submitted for Best Education,
+Won **Best Finance Hack** at SASEhack 2026. Also submitted for Best Education,
 Accessibility, or Social Impact.
