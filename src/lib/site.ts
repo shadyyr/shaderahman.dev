@@ -24,8 +24,6 @@ export const SITE = {
   description:
     "Computer engineering student at UCF. I build full-stack and AI-backed apps, design interfaces, and work on RISC-V hardware. Projects and work history.",
 
-  email: "",
-
   /** Where you are. Recruiters genuinely search on this. */
   location: "Orlando, FL",
 

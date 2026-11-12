@@ -54,6 +54,29 @@ const { listed = 6 } = Astro.props;
 const BLOCKS = 6;
 const BLOCK = 20;
 
+/*
+  The json is generated from Spotify's API, so every string in it was written
+  by somebody else. Names are only ever rendered as text, but ids and urls end
+  up inside href and src, where escaping does not help: a `javascript:` url is
+  a perfectly well-formed attribute value. So the build refuses anything that
+  is not the exact shape Spotify uses, rather than publishing it.
+*/
+const SPOTIFY_ID = /^[A-Za-z0-9]{22}$/;
+const SPOTIFY_ART = /^https:\/\/i\.scdn\.co\/image\/[A-Za-z0-9]+$/;
+for (const track of playlist.tracks) {
+  const ok =
+    SPOTIFY_ID.test(track.id) &&
+    SPOTIFY_ART.test(track.art) &&
+    track.url === `https://open.spotify.com/track/${track.id}` &&
+    Number.isFinite(track.durationMs) &&
+    track.artists.every((artist) => SPOTIFY_ID.test(artist.id));
+  if (!ok) {
+    throw new Error(
+      `[playlist] refusing to render track ${JSON.stringify(track.id)}: an id, url or cover is not in Spotify's format. Rerun npm run spotify and check src/data/playlist.json.`,
+    );
+  }
+}
+
 const stride = Math.floor(playlist.tracks.length / BLOCKS);
 const compact = (track: (typeof playlist.tracks)[number]) => ({
   i: track.id,

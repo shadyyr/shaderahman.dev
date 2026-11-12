@@ -141,6 +141,25 @@
     d: number;
   };
 
+  /*
+    The fetched list is checked before any of it is used. It is generated from
+    Spotify's API, and the ids in it are concatenated into link hrefs, the
+    cover's src and the uri handed to the embed. Names are safe as they are,
+    since they only ever go through textContent.
+  */
+  const SPOTIFY_ID = /^[A-Za-z0-9]{22}$/;
+  const isTrack = (track: any): track is Track =>
+    track != null &&
+    SPOTIFY_ID.test(track.i) &&
+    (track.a === null || /^[A-Za-z0-9]+$/.test(track.a)) &&
+    typeof track.n === "string" &&
+    Number.isFinite(track.d) &&
+    Array.isArray(track.r) &&
+    track.r.every(
+      (pair: any) =>
+        Array.isArray(pair) && typeof pair[0] === "string" && SPOTIFY_ID.test(pair[1]),
+    );
+
   const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
   const embed = $("player-embed");
@@ -493,6 +512,10 @@
           loadApi(),
           fetch("/playlist.json").then((r) => r.json() as Promise<Track[]>),
         ]);
+        /* Caught below, which puts the buttons back and leaves the dock shut. */
+        if (!Array.isArray(list) || !list.length || !list.every(isTrack)) {
+          throw new Error("playlist.json is not a track list");
+        }
         tracks = list;
         index = (startIndex + from) % tracks.length;
 

@@ -91,8 +91,10 @@ const graph = buildGraph({ path, title: fullTitle, description, isHome, crumbs }
   crossorigin
 />
 
+{/* `<` is escaped so a title or description containing "</script>" cannot
+     end this element early. Same treatment as the player's data block. */}
 <script
   type="application/ld+json"
-  set:html={JSON.stringify(graph)}
+  set:html={JSON.stringify(graph).replace(/</g, "\\u003c")}
   is:inline
 />
