@@ -18,9 +18,10 @@
  */
 
 import { createServer } from "node:http";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile, chmod } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { spawn } from "node:child_process";
+import { randomBytes } from "node:crypto";
 import process, { env } from "node:process";
 
 const CLIENT_ID = env.SPOTIFY_CLIENT_ID ?? "5d6dae626d7a41b98f91ad2a5471c203";
@@ -49,7 +50,9 @@ const page = (title, body) =>
 async function main() {
   if (!CLIENT_SECRET) throw new Error("No SPOTIFY_CLIENT_SECRET in .env. See scripts/spotify.mjs.");
 
-  const state = Math.random().toString(36).slice(2);
+  /* From the CSPRNG. Math.random() is predictable, and state is the only thing
+     that ties the callback to this run. */
+  const state = randomBytes(16).toString("hex");
   const authUrl =
     "https://accounts.spotify.com/authorize?" +
     new URLSearchParams({
@@ -64,9 +67,31 @@ async function main() {
   /* Wait for Spotify to redirect back with the code. */
   const code = await new Promise((resolve, reject) => {
     const server = createServer((req, res) => {
+      /*
+        This server is only ever addressed as 127.0.0.1. Any other Host header
+        is a page on some other origin whose name was pointed at this port (DNS
+        rebinding), which could otherwise read the landing page below and the
+        state inside it.
+      */
+      if (req.headers.host !== `127.0.0.1:${PORT}`) {
+        res.writeHead(400);
+        res.end();
+        return;
+      }
+
       const url = new URL(req.url, REDIRECT);
       const got = url.searchParams.get("code");
       const err = url.searchParams.get("error");
+
+      /* Checked before the error as well as the code. Spotify sends state back
+         on both, and without it nothing below came from Spotify. */
+      if ((got || err) && url.searchParams.get("state") !== state) {
+        res.writeHead(200, { "content-type": "text/html" });
+        res.end(page("State mismatch", "Request did not come from this run. Close and retry."));
+        server.close();
+        reject(new Error("state mismatch, possible interference"));
+        return;
+      }
 
       if (err) {
         res.writeHead(200, { "content-type": "text/html" });
@@ -101,14 +126,6 @@ async function main() {
         );
         return;
       }
-      if (url.searchParams.get("state") !== state) {
-        res.writeHead(200, { "content-type": "text/html" });
-        res.end(page("State mismatch", "Request did not come from this run. Close and retry."));
-        server.close();
-        reject(new Error("state mismatch, possible interference"));
-        return;
-      }
-
       res.writeHead(200, { "content-type": "text/html" });
       res.end(page("Authorized", "Done. You can close this tab and go back to the terminal."));
       server.close();
@@ -158,6 +175,7 @@ async function main() {
       code,
       redirect_uri: REDIRECT,
     }),
+    signal: AbortSignal.timeout(20_000),
   });
 
   if (!tokenResponse.ok) {
@@ -165,6 +183,7 @@ async function main() {
   }
 
   const { access_token: access, refresh_token: refresh } = await tokenResponse.json();
+  if (!refresh) throw new Error("Token exchange returned no refresh token. Nothing was saved.");
 
   /* ------------------------------------------------------------- persist ---
      Saved before anything is tested with it, which is the opposite of how this
@@ -179,14 +198,17 @@ async function main() {
   const updated = /^SPOTIFY_REFRESH_TOKEN=.*$/m.test(current)
     ? current.replace(/^SPOTIFY_REFRESH_TOKEN=.*$/m, line)
     : `${current.replace(/\s*$/, "")}\n${line}\n`;
-  await writeFile(ENV_PATH, updated);
+  /* Owner only. The mode on writeFile applies when the file is created, and
+     the chmod covers a .env that already existed with wider permissions. */
+  await writeFile(ENV_PATH, updated, { mode: 0o600 });
+  await chmod(ENV_PATH, 0o600);
   console.log("\nRefresh token saved to .env.");
 
   /* ----------------------------------------------------------- does it work - */
 
   const probe = await fetch(
     `https://api.spotify.com/v1/playlists/${PLAYLIST_ID}/tracks?limit=3&fields=total,items(track(name,artists(name)))`,
-    { headers: { authorization: `Bearer ${access}` } },
+    { headers: { authorization: `Bearer ${access}` }, signal: AbortSignal.timeout(20_000) },
   );
 
   console.log(`GET /playlists/{id}/tracks with a user token: ${probe.status}`);

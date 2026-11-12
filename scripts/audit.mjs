@@ -275,7 +275,7 @@ if (maps.length) fail(`${maps.length} source maps shipped`);
 else pass("no source maps");
 
 const leaked = files.filter((f) =>
-  /CLAUDE\.md|AGENTS\.md|HANDOFF\.md|\.cursorrules|\.env$/i.test(f),
+  /CLAUDE\.md|AGENTS\.md|HANDOFF\.md|\.cursorrules|\.env$|[\\/]\.env\.[\w.-]+$/i.test(f),
 );
 if (leaked.length) fail(`agent/env files in build: ${leaked.join(", ")}`);
 else pass("no agent or env files in build");

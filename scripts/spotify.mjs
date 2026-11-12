@@ -78,6 +78,7 @@ async function accessToken() {
       authorization: `Basic ${basic}`,
     },
     body,
+    signal: AbortSignal.timeout(20_000),
   });
 
   if (!response.ok) {
@@ -93,7 +94,10 @@ async function accessToken() {
 }
 
 async function get(url, token, attempt = 0) {
-  const response = await fetch(url, { headers: { authorization: `Bearer ${token}` } });
+  const response = await fetch(url, {
+    headers: { authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(20_000),
+  });
 
   if (response.status === 429 && attempt < 3) {
     const wait = Number(response.headers.get("retry-after") ?? 2) + 1;
@@ -108,6 +112,28 @@ async function get(url, token, attempt = 0) {
   }
 
   return response.json();
+}
+
+/*
+  What a resolved track has to look like before it is written out. Both output
+  files are committed and one is published, and the site builds links and image
+  urls out of these fields, so anything that is not a Spotify id or a url on
+  the expected Spotify host is refused here rather than trusted downstream.
+  Returns what is wrong, or null.
+*/
+const SPOTIFY_ID = /^[A-Za-z0-9]{22}$/;
+function problem(track) {
+  if (typeof track.name !== "string" || !track.name) return "no name";
+  if (!track.artists.every((a) => typeof a.name === "string" && SPOTIFY_ID.test(a.id)))
+    return "unexpected artist";
+  if (track.album !== null && typeof track.album !== "string") return "unexpected album";
+  if (track.art !== null && !/^https:\/\/i\.scdn\.co\/image\/[A-Za-z0-9]+$/.test(track.art))
+    return "unexpected art url";
+  if (!Number.isInteger(track.durationMs)) return "unexpected duration";
+  if (!/^spotify:track:[A-Za-z0-9]{22}$/.test(track.uri)) return "unexpected uri";
+  if (track.url !== null && !/^https:\/\/open\.spotify\.com\/track\/[A-Za-z0-9]{22}$/.test(track.url))
+    return "unexpected url";
+  return null;
 }
 
 async function main() {
@@ -180,7 +206,7 @@ async function main() {
       continue;
     }
 
-    tracks.push({
+    const resolved = {
       id,
       name: track.name,
       // Name and id both, because the panel links each artist to their Spotify
@@ -193,11 +219,28 @@ async function main() {
       durationMs: track.duration_ms,
       uri: track.uri,
       url: track.external_urls?.spotify ?? null,
-    });
+    };
+
+    const why = problem(resolved);
+    if (why) {
+      missing.push({ id, why });
+      continue;
+    }
+    tracks.push(resolved);
 
     fetched++;
     if (fetched % 25 === 0) console.log(`  ${fetched} fetched`);
     await sleep(GAP_MS);
+  }
+
+  /*
+    Nothing resolved means the API refused every lookup, and writing that out
+    would replace a good committed snapshot with an empty one.
+  */
+  if (ids.length && !tracks.length) {
+    throw new Error(
+      `None of ${ids.length} tracks resolved, nothing written. First failure: ${missing[0]?.why}`,
+    );
   }
 
   const playlist = await get(
@@ -215,7 +258,9 @@ async function main() {
     fetched: new Date().toISOString().slice(0, 10),
     name: playlist?.name ?? null,
     owner: playlist?.owner?.display_name ?? null,
-    url: playlist?.external_urls?.spotify ?? `https://open.spotify.com/playlist/${PLAYLIST_ID}`,
+    url: playlist?.external_urls?.spotify?.startsWith("https://open.spotify.com/")
+      ? playlist.external_urls.spotify
+      : `https://open.spotify.com/playlist/${PLAYLIST_ID}`,
     trackCount: tracks.length,
     tracks,
   };

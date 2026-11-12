@@ -13,8 +13,9 @@ pnpm-debug.log*
 
 # environment
 .env
-.env.production
-.env.local
+.env.*
+!.env.example
+.vercel/
 
 # Design sources. The originals live in Drive and stay there: this folder is
 # 187MB of print-resolution PDF and PNG, and only the optimised derivatives
@@ -36,3 +37,8 @@ HANDOFF.md
 .cursorrules
 .cursor/
 .claude/
+
+# The camera original behind public/portrait.webp. It carries GPS coordinates
+# in its EXIF, so it stays on this machine. scripts/generate-assets.mjs skips
+# the portrait when the file is absent.
+art/IMG_1474.jpeg
