@@ -1,9 +1,9 @@
 {
-  "fetched": "2026-08-16",
+  "fetched": "2026-11-13",
   "name": "port",
   "owner": "shaderahman",
   "url": "https://open.spotify.com/playlist/7BuJmt22LfGlNcnHLawnJA",
-  "trackCount": 224,
+  "trackCount": 230,
   "tracks": [
     {
       "id": "3qhlB30KknSejmIvZZLjOD",
@@ -3480,6 +3480,100 @@
       "durationMs": 219453,
       "uri": "spotify:track:24bzJwjGBWtGCs7xKIKQsB",
       "url": "https://open.spotify.com/track/24bzJwjGBWtGCs7xKIKQsB"
+    },
+    {
+      "id": "6TSHGfV9E66qCNu4UP6xZu",
+      "name": "Bobby",
+      "artists": [
+        {
+          "name": "Phoebe Bridgers",
+          "id": "1r1uxoy19fzMxunt3ONAkG"
+        }
+      ],
+      "album": "Lost Weekend",
+      "art": "https://i.scdn.co/image/ab67616d00001e0225a647ace83ba32770ab5d0f",
+      "durationMs": 239007,
+      "uri": "spotify:track:6TSHGfV9E66qCNu4UP6xZu",
+      "url": "https://open.spotify.com/track/6TSHGfV9E66qCNu4UP6xZu"
+    },
+    {
+      "id": "4JLBaHFkjxnbf9X0D8G3zQ",
+      "name": "Glory of the Snow",
+      "artists": [
+        {
+          "name": "Clairo",
+          "id": "3l0CmX0FuQjFxr8SK7Vqag"
+        }
+      ],
+      "album": "Charm",
+      "art": "https://i.scdn.co/image/ab67616d00001e02193c2fafdce8f116b5ca0a78",
+      "durationMs": 170832,
+      "uri": "spotify:track:4JLBaHFkjxnbf9X0D8G3zQ",
+      "url": "https://open.spotify.com/track/4JLBaHFkjxnbf9X0D8G3zQ"
+    },
+    {
+      "id": "4WJPxTsvWIdRZ9vMtqk7fj",
+      "name": "Nomad",
+      "artists": [
+        {
+          "name": "Clairo",
+          "id": "3l0CmX0FuQjFxr8SK7Vqag"
+        }
+      ],
+      "album": "Charm",
+      "art": "https://i.scdn.co/image/ab67616d00001e02193c2fafdce8f116b5ca0a78",
+      "durationMs": 225572,
+      "uri": "spotify:track:4WJPxTsvWIdRZ9vMtqk7fj",
+      "url": "https://open.spotify.com/track/4WJPxTsvWIdRZ9vMtqk7fj"
+    },
+    {
+      "id": "1JHJWwjCJa9jZvAA235QVt",
+      "name": "Farewell",
+      "artists": [
+        {
+          "name": "marQ",
+          "id": "0qrESwlBOjY46UxJrhsRbC"
+        }
+      ],
+      "album": "Farewell",
+      "art": "https://i.scdn.co/image/ab67616d00001e02434d59012d06a38a78769954",
+      "durationMs": 113556,
+      "uri": "spotify:track:1JHJWwjCJa9jZvAA235QVt",
+      "url": "https://open.spotify.com/track/1JHJWwjCJa9jZvAA235QVt"
+    },
+    {
+      "id": "3FZoov0ORtnr8TznSNI1y2",
+      "name": "brand new chanel$",
+      "artists": [
+        {
+          "name": "Slayyyter",
+          "id": "4QM5QCHicznALtX885CnZC"
+        }
+      ],
+      "album": "brand new chanel$",
+      "art": "https://i.scdn.co/image/ab67616d00001e023103722365f06b955e03d7a8",
+      "durationMs": 238505,
+      "uri": "spotify:track:3FZoov0ORtnr8TznSNI1y2",
+      "url": "https://open.spotify.com/track/3FZoov0ORtnr8TznSNI1y2"
+    },
+    {
+      "id": "2OzhQlSqBEmt7hmkYxfT6m",
+      "name": "Fortnight (feat. Post Malone)",
+      "artists": [
+        {
+          "name": "Taylor Swift",
+          "id": "06HL4z0CvFAxyc27GXpf02"
+        },
+        {
+          "name": "Post Malone",
+          "id": "246dkjvS1zLTtiykXe5h60"
+        }
+      ],
+      "album": "THE TORTURED POETS DEPARTMENT",
+      "art": "https://i.scdn.co/image/ab67616d00001e025076e4160d018e378f488c33",
+      "durationMs": 228965,
+      "uri": "spotify:track:2OzhQlSqBEmt7hmkYxfT6m",
+      "url": "https://open.spotify.com/track/2OzhQlSqBEmt7hmkYxfT6m"
     }
   ]
 }
