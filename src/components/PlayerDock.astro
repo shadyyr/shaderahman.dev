@@ -634,6 +634,14 @@
         panel = null;
         return;
       }
+      /*
+        Once per panel. On a direct load of the home page this runs twice for
+        the same nodes, from the call below and again from astro:page-load, and
+        a second set of listeners made every panel button act twice: Next
+        skipped a song, Pause paused and resumed, a row jumped twice as far.
+        A navigation builds a new queue element, so that still rebinds.
+      */
+      if (panel?.queue === queue) return;
 
       panel = {
         art: $<HTMLImageElement>("player-art"),
