@@ -256,6 +256,13 @@ const commands: Command[] = [
 
     input.addEventListener("input", filter);
 
+    // Choosing an item has to close the palette by hand. The dialog persists
+    // across navigations and the client router never reloads the page, so
+    // nothing else would, and it would sit open on top of the page it led to.
+    for (const item of items) {
+      item.addEventListener("click", () => palette.close());
+    }
+
     palette.addEventListener("keydown", (event) => {
       const shown = visible();
       if (event.key === "ArrowDown") {
