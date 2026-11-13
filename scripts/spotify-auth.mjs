@@ -153,11 +153,24 @@ async function main() {
         everything up to the first one and Spotify answered "response_type must
         be code" because that parameter had been cut off. rundll32 takes the URL
         as a single argument and never parses it.
+
+        macOS and Linux have their own openers, and both take the URL as one
+        argument too. A missing opener must not take the server down with it:
+        spawn reports that as an "error" event, which is fatal if nobody
+        listens, and the printed URL above still works by hand.
       */
-      spawn("rundll32", ["url.dll,FileProtocolHandler", authUrl.toString()], {
+      const [opener, openerArgs] =
+        process.platform === "win32"
+          ? ["rundll32", ["url.dll,FileProtocolHandler"]]
+          : process.platform === "darwin"
+            ? ["open", []]
+            : ["xdg-open", []];
+      const child = spawn(opener, [...openerArgs, authUrl.toString()], {
         stdio: "ignore",
         detached: true,
-      }).unref();
+      });
+      child.on("error", () => {});
+      child.unref();
     });
   });
 
